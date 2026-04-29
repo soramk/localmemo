@@ -121,11 +121,28 @@ export default function App() {
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [tabNames, setTabNames] = useState([]);
   
   // Modal states
   const [isNewFileModalOpen, setIsNewFileModalOpen] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [newFileType, setNewFileType] = useState('.md');
+
+  const loadDirectoryData = async (dirHandle) => {
+    const tree = await readDir(dirHandle, dirHandle.name, 1);
+    
+    // Load tabs explicitly
+    let savedTabs = await getVal(`tabs_${dirHandle.name}`);
+    if (!savedTabs) {
+      // First time loading this directory: make all root folders tabs by default
+      savedTabs = tree.filter(f => f.kind === 'directory').map(d => d.name);
+      await setVal(`tabs_${dirHandle.name}`, savedTabs);
+    }
+    
+    setTabNames(savedTabs);
+    setDirectoryHandle(dirHandle);
+    setFiles(tree);
+  };
 
   // Restore directory handle on startup
   useEffect(() => {
@@ -135,9 +152,7 @@ export default function App() {
         if (handle) {
           const status = await handle.queryPermission({ mode: 'readwrite' });
           if (status === 'granted') {
-            const tree = await readDir(handle, handle.name);
-            setDirectoryHandle(handle);
-            setFiles(tree);
+            await loadDirectoryData(handle);
           } else {
             setSavedHandle(handle);
           }
@@ -154,9 +169,7 @@ export default function App() {
     try {
       const status = await savedHandle.requestPermission({ mode: 'readwrite' });
       if (status === 'granted') {
-        const tree = await readDir(savedHandle, savedHandle.name);
-        setDirectoryHandle(savedHandle);
-        setFiles(tree);
+        await loadDirectoryData(savedHandle);
         setSavedHandle(null);
         setError(null);
       } else {
@@ -169,7 +182,9 @@ export default function App() {
     }
   };
 
-  const readDir = async (dirHandle, pathPrefix = '') => {
+  const readDir = async (dirHandle, pathPrefix = '', currentDepth = 1) => {
+    if (currentDepth > 5) return []; // Max 5 levels depth
+
     const items = [];
     for await (const entry of dirHandle.values()) {
       const currentPath = pathPrefix + '/' + entry.name;
@@ -178,7 +193,7 @@ export default function App() {
           items.push({ name: entry.name, kind: 'file', handle: entry, path: currentPath, parentHandle: dirHandle });
         }
       } else if (entry.kind === 'directory') {
-        const children = await readDir(entry, currentPath);
+        const children = await readDir(entry, currentPath, currentDepth + 1);
         items.push({ name: entry.name, kind: 'directory', handle: entry, children, path: currentPath, parentHandle: dirHandle });
       }
     }
@@ -199,9 +214,7 @@ export default function App() {
       const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
       await setVal('directoryHandle', dirHandle);
       
-      const tree = await readDir(dirHandle, dirHandle.name);
-      setDirectoryHandle(dirHandle);
-      setFiles(tree);
+      await loadDirectoryData(dirHandle);
       setSelectedFile(null);
       setEditorContent('');
     } catch (err) {
@@ -339,18 +352,29 @@ export default function App() {
 
   const tabs = useMemo(() => {
     if (!files.length) return [];
-    const rootFiles = files.filter(f => f.kind === 'file');
-    const rootDirs = files.filter(f => f.kind === 'directory');
     
     const newTabs = [];
-    if (rootFiles.length > 0) {
-      newTabs.push({ name: 'メイン', items: rootFiles });
+    const rootDirs = files.filter(f => f.kind === 'directory');
+    
+    // Main tab contains root files and non-tab root directories
+    const mainItems = files.filter(f => 
+      f.kind === 'file' || (f.kind === 'directory' && !tabNames.includes(f.name))
+    );
+    
+    if (mainItems.length > 0 || tabNames.length === 0) {
+      newTabs.push({ name: 'メイン', items: mainItems });
     }
-    rootDirs.forEach(dir => {
-      newTabs.push({ name: dir.name, items: dir.children || [] });
+    
+    // Explicit tabs
+    tabNames.forEach(tabName => {
+      const dir = rootDirs.find(d => d.name === tabName);
+      if (dir) {
+        newTabs.push({ name: dir.name, items: dir.children || [] });
+      }
     });
+    
     return newTabs;
-  }, [files]);
+  }, [files, tabNames]);
 
   useEffect(() => {
     if (tabs.length > 0) {
@@ -366,38 +390,58 @@ export default function App() {
 
   const handleDropOnItem = async (sourceItem, targetItem) => {
     if (!sourceItem || !targetItem) return;
-    if (sourceItem.kind !== 'file' || targetItem.kind !== 'file') return;
+    if (sourceItem.path === targetItem.path) return;
+    if (sourceItem.kind !== 'file') return; // Only files can be dragged for now
     
-    const folderName = window.prompt("自動フォルダ化\n新しいフォルダの名前を入力してください:", "新しいフォルダ");
-    if (!folderName) return;
-
     try {
-      const newDirHandle = await targetItem.parentHandle.getDirectoryHandle(folderName, { create: true });
-      
-      // Copy target
-      const targetFile = await targetItem.handle.getFile();
-      const targetBuffer = await targetFile.arrayBuffer();
-      const newTargetHandle = await newDirHandle.getFileHandle(targetItem.name, { create: true });
-      const targetWritable = await newTargetHandle.createWritable();
-      await targetWritable.write(targetBuffer);
-      await targetWritable.close();
+      if (targetItem.kind === 'directory') {
+        // Move sourceItem INTO targetItem
+        const targetDirHandle = targetItem.handle;
+        
+        // Copy source
+        const sourceFile = await sourceItem.handle.getFile();
+        const sourceBuffer = await sourceFile.arrayBuffer();
+        
+        const newSourceHandle = await targetDirHandle.getFileHandle(sourceItem.name, { create: true });
+        const sourceWritable = await newSourceHandle.createWritable();
+        await sourceWritable.write(sourceBuffer);
+        await sourceWritable.close();
 
-      // Copy source
-      const sourceFile = await sourceItem.handle.getFile();
-      const sourceBuffer = await sourceFile.arrayBuffer();
-      let sourceName = sourceItem.name;
-      if (sourceName === targetItem.name) sourceName = "copy_" + sourceName;
-      
-      const newSourceHandle = await newDirHandle.getFileHandle(sourceName, { create: true });
-      const sourceWritable = await newSourceHandle.createWritable();
-      await sourceWritable.write(sourceBuffer);
-      await sourceWritable.close();
+        // Delete original
+        await sourceItem.parentHandle.removeEntry(sourceItem.name);
 
-      // Delete originals
-      await targetItem.parentHandle.removeEntry(targetItem.name);
-      await sourceItem.parentHandle.removeEntry(sourceItem.name);
+      } else if (targetItem.kind === 'file' && sourceItem.kind === 'file') {
+        // Group files into a new folder
+        const folderName = window.prompt("自動フォルダ化\n新しいフォルダの名前を入力してください:", "新しいフォルダ");
+        if (!folderName) return;
 
-      const tree = await readDir(directoryHandle, directoryHandle.name);
+        const newDirHandle = await targetItem.parentHandle.getDirectoryHandle(folderName, { create: true });
+        
+        // Copy target
+        const targetFile = await targetItem.handle.getFile();
+        const targetBuffer = await targetFile.arrayBuffer();
+        const newTargetHandle = await newDirHandle.getFileHandle(targetItem.name, { create: true });
+        const targetWritable = await newTargetHandle.createWritable();
+        await targetWritable.write(targetBuffer);
+        await targetWritable.close();
+
+        // Copy source
+        const sourceFile = await sourceItem.handle.getFile();
+        const sourceBuffer = await sourceFile.arrayBuffer();
+        let sourceName = sourceItem.name;
+        if (sourceName === targetItem.name) sourceName = "copy_" + sourceName;
+        
+        const newSourceHandle = await newDirHandle.getFileHandle(sourceName, { create: true });
+        const sourceWritable = await newSourceHandle.createWritable();
+        await sourceWritable.write(sourceBuffer);
+        await sourceWritable.close();
+
+        // Delete originals
+        await targetItem.parentHandle.removeEntry(targetItem.name);
+        await sourceItem.parentHandle.removeEntry(sourceItem.name);
+      }
+
+      const tree = await readDir(directoryHandle, directoryHandle.name, 1);
       setFiles(tree);
 
       if (selectedFile && (selectedFile.path === sourceItem.path || selectedFile.path === targetItem.path)) {
@@ -406,7 +450,7 @@ export default function App() {
       }
 
     } catch (err) {
-      setError(`フォルダ化（複製・移動）に失敗しました: ${err.message}`);
+      setError(`移動・フォルダ化に失敗しました: ${err.message}`);
     }
   };
 
@@ -417,7 +461,12 @@ export default function App() {
 
     try {
       await directoryHandle.getDirectoryHandle(tabName, { create: true });
-      const tree = await readDir(directoryHandle, directoryHandle.name);
+      const tree = await readDir(directoryHandle, directoryHandle.name, 1);
+      
+      const newTabs = [...tabNames, tabName];
+      await setVal(`tabs_${directoryHandle.name}`, newTabs);
+      setTabNames(newTabs);
+      
       setFiles(tree);
       setActiveTabName(tabName);
     } catch (err) {
