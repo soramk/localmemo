@@ -37,6 +37,51 @@ async function getVal(key) {
   });
 }
 
+const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile }) => {
+  const [isOpen, setIsOpen] = useState(true);
+
+  if (item.kind === 'directory') {
+    return (
+      <div>
+        <div 
+          className="file-item"
+          style={{ paddingLeft: `${level * 12 + 8}px` }}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="file-item-icon">
+            {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+            <Folder size={14} className="icon-folder" style={{ marginLeft: '4px' }} />
+          </div>
+          <span>{item.name}</span>
+        </div>
+        {isOpen && item.children.map(child => (
+          <FileTreeItem 
+            key={child.path} 
+            item={child} 
+            level={level + 1} 
+            selectedFile={selectedFile} 
+            handleSelectFile={handleSelectFile} 
+          />
+        ))}
+      </div>
+    );
+  }
+
+  const isSelected = selectedFile?.path === item.path;
+  return (
+    <div 
+      className={`file-item ${isSelected ? 'selected' : ''}`}
+      style={{ paddingLeft: `${level * 12 + 24}px` }}
+      onClick={() => handleSelectFile(item)}
+    >
+      <div className="file-item-icon">
+        <FileText size={14} className="icon-file" />
+      </div>
+      <span>{item.name}</span>
+    </div>
+  );
+};
+
 export default function App() {
   const [directoryHandle, setDirectoryHandle] = useState(null);
   const [savedHandle, setSavedHandle] = useState(null);
@@ -219,45 +264,6 @@ export default function App() {
     }
   }, [tabs, activeTabName]);
 
-  const FileTreeItem = ({ item, level = 0 }) => {
-    const [isOpen, setIsOpen] = useState(true);
-
-    if (item.kind === 'directory') {
-      return (
-        <div>
-          <div 
-            className="file-item"
-            style={{ paddingLeft: `${level * 12 + 8}px` }}
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            <div className="file-item-icon">
-              {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
-              <Folder size={14} className="icon-folder" style={{ marginLeft: '4px' }} />
-            </div>
-            <span>{item.name}</span>
-          </div>
-          {isOpen && item.children.map(child => (
-            <FileTreeItem key={child.path} item={child} level={level + 1} />
-          ))}
-        </div>
-      );
-    }
-
-    const isSelected = selectedFile?.path === item.path;
-    return (
-      <div 
-        className={`file-item ${isSelected ? 'selected' : ''}`}
-        style={{ paddingLeft: `${level * 12 + 24}px` }}
-        onClick={() => handleSelectFile(item)}
-      >
-        <div className="file-item-icon">
-          <FileText size={14} className="icon-file" />
-        </div>
-        <span>{item.name}</span>
-      </div>
-    );
-  };
-
   return (
     <div className="app-container">
       {/* Sidebar */}
@@ -311,7 +317,13 @@ export default function App() {
           )}
           
           {tabs.find(t => t.name === activeTabName)?.items.map(item => (
-            <FileTreeItem key={item.path} item={item} level={0} />
+            <FileTreeItem 
+              key={item.path} 
+              item={item} 
+              level={0} 
+              selectedFile={selectedFile} 
+              handleSelectFile={handleSelectFile} 
+            />
           ))}
         </div>
       </div>
