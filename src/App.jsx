@@ -39,8 +39,9 @@ async function getVal(key) {
   });
 }
 
-const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile }) => {
+const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, draggedItem, setDraggedItem, handleDropOnItem }) => {
   const [isOpen, setIsOpen] = useState(true);
+  const [isOver, setIsOver] = useState(false);
 
   if (item.kind === 'directory') {
     return (
@@ -63,6 +64,9 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile }) => {
             level={level + 1} 
             selectedFile={selectedFile} 
             handleSelectFile={handleSelectFile} 
+            draggedItem={draggedItem}
+            setDraggedItem={setDraggedItem}
+            handleDropOnItem={handleDropOnItem}
           />
         ))}
       </div>
@@ -72,9 +76,31 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile }) => {
   const isSelected = selectedFile?.path === item.path;
   return (
     <div 
-      className={`file-item ${isSelected ? 'selected' : ''}`}
+      className={`file-item ${isSelected ? 'selected' : ''} ${isOver ? 'drag-over' : ''}`}
       style={{ paddingLeft: `${level * 12 + 24}px` }}
       onClick={() => handleSelectFile(item)}
+      draggable
+      onDragStart={(e) => {
+        e.stopPropagation();
+        setDraggedItem(item);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOver(true);
+      }}
+      onDragLeave={(e) => {
+        setIsOver(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOver(false);
+        if (draggedItem && draggedItem.path !== item.path) {
+          handleDropOnItem(draggedItem, item);
+        }
+        setDraggedItem(null);
+      }}
     >
       <div className="file-item-icon">
         <FileText size={14} className="icon-file" />
@@ -95,6 +121,11 @@ export default function App() {
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  
+  // Modal states
+  const [isNewFileModalOpen, setIsNewFileModalOpen] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+  const [newFileType, setNewFileType] = useState('.md');
 
   // Restore directory handle on startup
   useEffect(() => {
@@ -217,12 +248,20 @@ export default function App() {
     }
   };
 
-  const handleAddFile = async () => {
-    if (!directoryHandle) return;
-    
-    const fileName = window.prompt("新しいメモのファイル名を入力してください（例: memo.md）", "new_memo.md");
-    if (!fileName) return;
+  const handleOpenNewFileModal = () => {
+    setNewFileName('');
+    setNewFileType('.md');
+    setIsNewFileModalOpen(true);
+  };
 
+  const handleCloseNewFileModal = () => {
+    setIsNewFileModalOpen(false);
+  };
+
+  const confirmAddFile = async () => {
+    if (!directoryHandle || !newFileName.trim()) return;
+    
+    const fileName = `${newFileName.trim()}${newFileType}`;
     let targetDirHandle = directoryHandle;
     if (activeTabName && activeTabName !== 'メイン') {
       const rootDir = files.find(f => f.kind === 'directory' && f.name === activeTabName);
@@ -247,6 +286,7 @@ export default function App() {
       if (newFileItem) {
         handleSelectFile(newFileItem);
       }
+      setIsNewFileModalOpen(false);
     } catch (err) {
       setError(`ファイルの作成に失敗しました: ${err.message}`);
     }
@@ -322,8 +362,102 @@ export default function App() {
     }
   }, [tabs, activeTabName]);
 
+  const [draggedItem, setDraggedItem] = useState(null);
+
+  const handleDropOnItem = async (sourceItem, targetItem) => {
+    if (!sourceItem || !targetItem) return;
+    if (sourceItem.kind !== 'file' || targetItem.kind !== 'file') return;
+    
+    const folderName = window.prompt("自動フォルダ化\n新しいフォルダの名前を入力してください:", "新しいフォルダ");
+    if (!folderName) return;
+
+    try {
+      const newDirHandle = await targetItem.parentHandle.getDirectoryHandle(folderName, { create: true });
+      
+      // Copy target
+      const targetFile = await targetItem.handle.getFile();
+      const targetBuffer = await targetFile.arrayBuffer();
+      const newTargetHandle = await newDirHandle.getFileHandle(targetItem.name, { create: true });
+      const targetWritable = await newTargetHandle.createWritable();
+      await targetWritable.write(targetBuffer);
+      await targetWritable.close();
+
+      // Copy source
+      const sourceFile = await sourceItem.handle.getFile();
+      const sourceBuffer = await sourceFile.arrayBuffer();
+      let sourceName = sourceItem.name;
+      if (sourceName === targetItem.name) sourceName = "copy_" + sourceName;
+      
+      const newSourceHandle = await newDirHandle.getFileHandle(sourceName, { create: true });
+      const sourceWritable = await newSourceHandle.createWritable();
+      await sourceWritable.write(sourceBuffer);
+      await sourceWritable.close();
+
+      // Delete originals
+      await targetItem.parentHandle.removeEntry(targetItem.name);
+      await sourceItem.parentHandle.removeEntry(sourceItem.name);
+
+      const tree = await readDir(directoryHandle, directoryHandle.name);
+      setFiles(tree);
+
+      if (selectedFile && (selectedFile.path === sourceItem.path || selectedFile.path === targetItem.path)) {
+        setSelectedFile(null);
+        setEditorContent('');
+      }
+
+    } catch (err) {
+      setError(`フォルダ化（複製・移動）に失敗しました: ${err.message}`);
+    }
+  };
+
+  const handleAddTab = async () => {
+    if (!directoryHandle) return;
+    const tabName = window.prompt("新しいタブ（フォルダ）の名前を入力してください:");
+    if (!tabName) return;
+
+    try {
+      await directoryHandle.getDirectoryHandle(tabName, { create: true });
+      const tree = await readDir(directoryHandle, directoryHandle.name);
+      setFiles(tree);
+      setActiveTabName(tabName);
+    } catch (err) {
+      setError(`タブの作成に失敗しました: ${err.message}`);
+    }
+  };
+
   return (
     <div className="app-container">
+      {/* New File Modal */}
+      {isNewFileModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">新規メモの作成</h3>
+            <div className="modal-input-group">
+              <input 
+                type="text" 
+                className="modal-input" 
+                placeholder="ファイル名（拡張子なし）" 
+                value={newFileName}
+                onChange={e => setNewFileName(e.target.value)}
+                autoFocus
+              />
+              <select 
+                className="modal-input" 
+                value={newFileType} 
+                onChange={e => setNewFileType(e.target.value)}
+              >
+                <option value=".md">Markdown (.md)</option>
+                <option value=".txt">Text (.txt)</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={handleCloseNewFileModal}>キャンセル</button>
+              <button className="btn-primary-solid" onClick={confirmAddFile}>作成</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">
@@ -346,28 +480,13 @@ export default function App() {
 
           {directoryHandle && (
             <div className="sidebar-actions-row">
-              <button onClick={handleAddFile} className="btn btn-primary" style={{ flex: 1 }}>
+              <button onClick={handleOpenNewFileModal} className="btn btn-primary" style={{ flex: 1 }}>
                 <Plus size={16} />
                 新規メモ
               </button>
             </div>
           )}
         </div>
-
-        {/* Tabs */}
-        {tabs.length > 0 && (
-          <div className="tabs-container">
-            {tabs.map(tab => (
-              <button
-                key={tab.name}
-                onClick={() => setActiveTabName(tab.name)}
-                className={`tab ${activeTabName === tab.name ? 'active' : ''}`}
-              >
-                {tab.name}
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* File List */}
         <div className="file-list">
@@ -390,6 +509,9 @@ export default function App() {
               level={0} 
               selectedFile={selectedFile} 
               handleSelectFile={handleSelectFile} 
+              draggedItem={draggedItem}
+              setDraggedItem={setDraggedItem}
+              handleDropOnItem={handleDropOnItem}
             />
           ))}
         </div>
@@ -397,6 +519,24 @@ export default function App() {
 
       {/* Main Area */}
       <div className="main-area">
+        {/* Tabs moved to main area top */}
+        {tabs.length > 0 && (
+          <div className="tabs-container">
+            {tabs.map(tab => (
+              <button
+                key={tab.name}
+                onClick={() => setActiveTabName(tab.name)}
+                className={`tab ${activeTabName === tab.name ? 'active' : ''}`}
+              >
+                {tab.name}
+              </button>
+            ))}
+            <button onClick={handleAddTab} className="btn-add-tab" title="新しいタブ（フォルダ）を追加">
+              <Plus size={18} />
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="error-banner">
             <AlertCircle size={18} color="#EF4444" />
