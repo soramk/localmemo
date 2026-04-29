@@ -340,3 +340,64 @@ body {
   color: #B91C1C;
   white-space: pre-wrap;
 }
+
+/* New Buttons and Actions */
+.sidebar-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: #FFFFFF;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-icon:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-main);
+}
+.btn-icon-danger:hover {
+  background-color: #FEF2F2;
+  color: #EF4444;
+  border-color: #FCA5A5;
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.markdown-preview {
+  flex: 1;
+  width: 100%;
+  padding: 32px 48px;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--text-main);
+  background-color: transparent;
+  overflow-y: auto;
+}
+
+.markdown-preview h1 { font-size: 2rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3rem; }
+.markdown-preview h2 { font-size: 1.5rem; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+.markdown-preview h3 { font-size: 1.25rem; margin-top: 1.2rem; margin-bottom: 0.6rem; }
+.markdown-preview p { margin-bottom: 1rem; }
+.markdown-preview ul, .markdown-preview ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+.markdown-preview li { margin-bottom: 0.25rem; }
+.markdown-preview blockquote { border-left: 4px solid var(--border-color); padding-left: 1rem; color: var(--text-muted); margin-bottom: 1rem; }
+.markdown-preview pre { background-color: #F3F4F6; padding: 1rem; border-radius: 8px; overflow-x: auto; margin-bottom: 1rem; }
+.markdown-preview code { background-color: #F3F4F6; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+.markdown-preview pre code { background-color: transparent; padding: 0; }
+.markdown-preview a { color: var(--primary); text-decoration: none; }
+.markdown-preview a:hover { text-decoration: underline; }
+.markdown-preview img { max-width: 100%; height: auto; border-radius: 8px; }

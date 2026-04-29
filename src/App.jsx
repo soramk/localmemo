@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw } from 'lucide-react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './index.css';
 
 // IndexedDB Utility
@@ -92,6 +94,7 @@ export default function App() {
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   // Restore directory handle on startup
   useEffect(() => {
@@ -141,13 +144,11 @@ export default function App() {
       const currentPath = pathPrefix + '/' + entry.name;
       if (entry.kind === 'file') {
         if (entry.name.endsWith('.txt') || entry.name.endsWith('.md')) {
-          items.push({ name: entry.name, kind: 'file', handle: entry, path: currentPath });
+          items.push({ name: entry.name, kind: 'file', handle: entry, path: currentPath, parentHandle: dirHandle });
         }
       } else if (entry.kind === 'directory') {
         const children = await readDir(entry, currentPath);
-        if (children.length > 0) {
-          items.push({ name: entry.name, kind: 'directory', handle: entry, children, path: currentPath });
-        }
+        items.push({ name: entry.name, kind: 'directory', handle: entry, children, path: currentPath, parentHandle: dirHandle });
       }
     }
     return items.sort((a, b) => {
@@ -206,8 +207,65 @@ export default function App() {
       setIsDirty(false);
       setLastSaved(null);
       setError(null);
+      if (fileItem.name.endsWith('.md')) {
+        setIsPreviewMode(true);
+      } else {
+        setIsPreviewMode(false);
+      }
     } catch (err) {
       setError(`ファイルの読み込みに失敗しました: ${err.message}`);
+    }
+  };
+
+  const handleAddFile = async () => {
+    if (!directoryHandle) return;
+    
+    const fileName = window.prompt("新しいメモのファイル名を入力してください（例: memo.md）", "new_memo.md");
+    if (!fileName) return;
+
+    let targetDirHandle = directoryHandle;
+    if (activeTabName && activeTabName !== 'メイン') {
+      const rootDir = files.find(f => f.kind === 'directory' && f.name === activeTabName);
+      if (rootDir) targetDirHandle = rootDir.handle;
+    }
+
+    try {
+      await targetDirHandle.getFileHandle(fileName, { create: true });
+      const tree = await readDir(directoryHandle, directoryHandle.name);
+      setFiles(tree);
+      
+      const findFile = (items) => {
+        for (const item of items) {
+          if (item.kind === 'file' && item.name === fileName && item.parentHandle === targetDirHandle) return item;
+          if (item.kind === 'directory') {
+            const found = findFile(item.children);
+            if (found) return found;
+          }
+        }
+      };
+      const newFileItem = findFile(tree);
+      if (newFileItem) {
+        handleSelectFile(newFileItem);
+      }
+    } catch (err) {
+      setError(`ファイルの作成に失敗しました: ${err.message}`);
+    }
+  };
+
+  const handleDeleteFile = async () => {
+    if (!selectedFile || !selectedFile.parentHandle) return;
+    
+    const confirm = window.confirm(`「${selectedFile.name}」を完全に削除してもよろしいですか？`);
+    if (!confirm) return;
+
+    try {
+      await selectedFile.parentHandle.removeEntry(selectedFile.name);
+      const tree = await readDir(directoryHandle, directoryHandle.name);
+      setFiles(tree);
+      setSelectedFile(null);
+      setEditorContent('');
+    } catch (err) {
+      setError(`ファイルの削除に失敗しました: ${err.message}`);
     }
   };
 
@@ -285,6 +343,15 @@ export default function App() {
               前回のフォルダを復元
             </button>
           )}
+
+          {directoryHandle && (
+            <div className="sidebar-actions-row">
+              <button onClick={handleAddFile} className="btn btn-primary" style={{ flex: 1 }}>
+                <Plus size={16} />
+                新規メモ
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -344,28 +411,53 @@ export default function App() {
                 <FileText size={16} color="#9CA3AF" />
                 {selectedFile.path.split('/').join(' / ')}
               </div>
-              <div className="editor-status">
-                {isDirty ? (
-                  <span className="status-dirty">
-                    <div className="pulse-dot" style={{ display: 'inline-block', marginRight: '6px' }}></div>
-                    未保存...
-                  </span>
-                ) : lastSaved ? (
-                  <span className="status-saved">
-                    <Save size={14} style={{ marginRight: '4px' }} />
-                    {lastSaved.toLocaleTimeString()} に自動保存済
-                  </span>
-                ) : null}
+              <div className="editor-actions">
+                <div className="editor-status">
+                  {isDirty ? (
+                    <span className="status-dirty">
+                      <div className="pulse-dot" style={{ display: 'inline-block', marginRight: '6px' }}></div>
+                      未保存...
+                    </span>
+                  ) : lastSaved ? (
+                    <span className="status-saved">
+                      <Save size={14} style={{ marginRight: '4px' }} />
+                      {lastSaved.toLocaleTimeString()} に自動保存済
+                    </span>
+                  ) : null}
+                </div>
+                
+                <button 
+                  onClick={() => setIsPreviewMode(!isPreviewMode)} 
+                  className="btn-icon" 
+                  title={isPreviewMode ? "編集モード" : "プレビュー"}
+                >
+                  {isPreviewMode ? <Edit2 size={16} /> : <Eye size={16} />}
+                </button>
+                <button 
+                  onClick={handleDeleteFile} 
+                  className="btn-icon btn-icon-danger" 
+                  title="メモを削除"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
             
-            <textarea
-              className="editor-textarea"
-              value={editorContent}
-              onChange={handleEditorChange}
-              placeholder="メモを入力..."
-              spellCheck="false"
-            />
+            {isPreviewMode ? (
+              <div className="markdown-preview">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {editorContent}
+                </ReactMarkdown>
+              </div>
+            ) : (
+              <textarea
+                className="editor-textarea"
+                value={editorContent}
+                onChange={handleEditorChange}
+                placeholder="メモを入力..."
+                spellCheck="false"
+              />
+            )}
           </>
         ) : (
           <div className="welcome-screen">
