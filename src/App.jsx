@@ -80,9 +80,13 @@ export default function App() {
         setFiles(tree);
         setSavedHandle(null);
         setError(null);
+      } else {
+        setError('フォルダへのアクセス権限が拒否されました。「PCのフォルダを開く」から選び直してください。');
+        setSavedHandle(null);
       }
     } catch (err) {
-      setError(`フォルダの再接続に失敗しました: ${err.message}`);
+      setError(`フォルダの復元に失敗しました (${err.message})。「PCのフォルダを開く」から選び直してください。`);
+      setSavedHandle(null);
     }
   };
 
@@ -140,7 +144,18 @@ export default function App() {
 
     try {
       const file = await fileItem.handle.getFile();
-      const text = await file.text();
+      const buffer = await file.arrayBuffer();
+      
+      let text = '';
+      try {
+        const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+        text = utf8Decoder.decode(buffer);
+      } catch (e) {
+        // Fallback to Shift-JIS if UTF-8 decoding fails
+        const sjisDecoder = new TextDecoder('shift_jis');
+        text = sjisDecoder.decode(buffer);
+      }
+
       setSelectedFile(fileItem);
       setEditorContent(text);
       setIsDirty(false);
