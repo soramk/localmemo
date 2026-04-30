@@ -390,7 +390,7 @@ export default function App() {
 
   const handleOpenNewFileModal = () => {
     setNewFileName('');
-    setNewFileType('.md');
+    setNewFileType('.txt');
     setIsNewFileModalOpen(true);
   };
 
@@ -674,8 +674,8 @@ export default function App() {
                 value={newFileType} 
                 onChange={e => setNewFileType(e.target.value)}
               >
-                <option value=".md">Markdown (.md)</option>
                 <option value=".txt">Text (.txt)</option>
+                <option value=".md">Markdown (.md)</option>
               </select>
             </div>
             <div className="modal-actions">
@@ -700,9 +700,12 @@ export default function App() {
                   onChange={e => setTempSettings({...tempSettings, fontFamily: e.target.value})}
                 >
                   <option value="inherit">デフォルト (System)</option>
-                  <option value="sans-serif">ゴシック体 (Sans-Serif)</option>
-                  <option value="serif">明朝体 (Serif)</option>
+                  <option value="'Inter', 'Roboto', 'Helvetica Neue', sans-serif">モダン・ゴシック (Inter/Roboto)</option>
+                  <option value="'Yu Gothic', 'Meiryo', sans-serif">和風ゴシック (游ゴシック/メイリオ)</option>
+                  <option value="'Yu Mincho', 'MS Mincho', serif">明朝体 (游明朝/MS明朝)</option>
                   <option value="monospace">等幅 (Monospace)</option>
+                  <option value="'Courier New', Courier, monospace">等幅セリフ (Courier New)</option>
+                  <option value="'Consolas', 'Monaco', monospace">プログラミング (Consolas/Monaco)</option>
                 </select>
               </div>
               
