@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon } from 'lucide-react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './index.css';
@@ -39,13 +39,21 @@ async function getVal(key) {
   });
 }
 
-const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, draggedItem, setDraggedItem, handleDropOnItem, starredFiles, toggleStar }) => {
+const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, draggedItem, setDraggedItem, handleDropOnItem, starredFiles, toggleStar, onContextMenu }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isOver, setIsOver] = useState(false);
 
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onContextMenu) {
+      onContextMenu(e, item);
+    }
+  };
+
   if (item.kind === 'directory') {
     return (
-      <div>
+      <div onContextMenu={handleContextMenu}>
         <div 
           className={`file-item ${isOver ? 'drag-over' : ''}`}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
@@ -86,6 +94,7 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, dragged
             handleDropOnItem={handleDropOnItem}
             starredFiles={starredFiles}
             toggleStar={toggleStar}
+            onContextMenu={onContextMenu}
           />
         ))}
       </div>
@@ -100,6 +109,7 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, dragged
       className={`file-item ${isSelected ? 'selected' : ''} ${isOver ? 'drag-over' : ''}`}
       style={{ paddingLeft: `${level * 12 + 24}px` }}
       onClick={() => handleSelectFile(item)}
+      onContextMenu={handleContextMenu}
       draggable
       onDragStart={(e) => {
         e.stopPropagation();
@@ -152,6 +162,27 @@ export default function App() {
   const previewRef = useRef(null);
   const isSyncingLeft = useRef(false);
   const isSyncingRight = useRef(false);
+
+  // Context Menu State
+  const [contextMenu, setContextMenu] = useState({ isOpen: false, x: 0, y: 0, targetItem: null });
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('click', closeContextMenu);
+    return () => window.removeEventListener('click', closeContextMenu);
+  }, [closeContextMenu]);
+
+  const handleContextMenu = useCallback((e, item) => {
+    e.preventDefault();
+    setContextMenu({
+      isOpen: true,
+      x: e.pageX,
+      y: e.pageY,
+      targetItem: item
+    });
+  }, []);
 
   const handleEditorScroll = (e) => {
     if (viewMode !== 'split' || !previewRef.current) return;
@@ -388,7 +419,10 @@ export default function App() {
     }
   };
 
-  const handleOpenNewFileModal = () => {
+  const [newFileParentHandle, setNewFileParentHandle] = useState(null);
+
+  const handleOpenNewFileModal = (dirHandle = null) => {
+    setNewFileParentHandle(dirHandle instanceof FileSystemDirectoryHandle ? dirHandle : null);
     setNewFileName('');
     setNewFileType('.txt');
     setIsNewFileModalOpen(true);
@@ -402,8 +436,9 @@ export default function App() {
     if (!directoryHandle || !newFileName.trim()) return;
     
     const fileName = `${newFileName.trim()}${newFileType}`;
-    let targetDirHandle = directoryHandle;
-    if (activeTabName && activeTabName !== 'メイン') {
+    let targetDirHandle = newFileParentHandle || directoryHandle;
+    
+    if (!newFileParentHandle && activeTabName && activeTabName !== 'メイン') {
       const rootDir = files.find(f => f.kind === 'directory' && f.name === activeTabName);
       if (rootDir) targetDirHandle = rootDir.handle;
     }
@@ -429,6 +464,71 @@ export default function App() {
       setIsNewFileModalOpen(false);
     } catch (err) {
       setError(`ファイルの作成に失敗しました: ${err.message}`);
+    }
+  };
+
+  const handleCreateFolderFromMenu = async () => {
+    const item = contextMenu.targetItem;
+    if (!item || item.kind !== 'directory') return;
+    const folderName = window.prompt("新しいフォルダの名前を入力してください:");
+    if (!folderName) return;
+    try {
+      await item.handle.getDirectoryHandle(folderName, { create: true });
+      const tree = await readDir(directoryHandle, directoryHandle.name, 1);
+      setFiles(tree);
+    } catch (err) {
+      setError(`フォルダ作成に失敗しました: ${err.message}`);
+    }
+  };
+
+  const handleRenameFromMenu = async () => {
+    const item = contextMenu.targetItem;
+    if (!item) return;
+    const newName = window.prompt("新しい名前を入力してください:", item.name);
+    if (!newName || newName === item.name) return;
+    
+    try {
+      if (item.kind === 'directory') {
+        setError("フォルダの名前変更は現在サポートされていません。");
+        return;
+      }
+      
+      const file = await item.handle.getFile();
+      const buffer = await file.arrayBuffer();
+      const newHandle = await item.parentHandle.getFileHandle(newName, { create: true });
+      const writable = await newHandle.createWritable();
+      await writable.write(buffer);
+      await writable.close();
+      await item.parentHandle.removeEntry(item.name);
+      
+      const tree = await readDir(directoryHandle, directoryHandle.name, 1);
+      setFiles(tree);
+      
+      if (selectedFile?.path === item.path) {
+        setSelectedFile(null);
+        setEditorContent('');
+      }
+    } catch (err) {
+      setError(`名前変更に失敗しました: ${err.message}`);
+    }
+  };
+
+  const handleDeleteFromMenu = async () => {
+    const item = contextMenu.targetItem;
+    if (!item) return;
+    if (!window.confirm(`「${item.name}」を削除してもよろしいですか？`)) return;
+    
+    try {
+      await item.parentHandle.removeEntry(item.name, { recursive: true });
+      const tree = await readDir(directoryHandle, directoryHandle.name, 1);
+      setFiles(tree);
+      
+      if (selectedFile && selectedFile.path.startsWith(item.path)) {
+        setSelectedFile(null);
+        setEditorContent('');
+      }
+    } catch (err) {
+      setError(`削除に失敗しました: ${err.message}`);
     }
   };
 
@@ -1059,6 +1159,47 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* Context Menu */}
+      {contextMenu.isOpen && contextMenu.targetItem && (
+        <div 
+          className="context-menu" 
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contextMenu.targetItem.kind === 'directory' && (
+            <>
+              <div className="context-menu-item" onClick={() => {
+                handleOpenNewFileModal(contextMenu.targetItem.handle);
+                closeContextMenu();
+              }}>
+                <FilePlus size={14} /> 新規メモ
+              </div>
+              <div className="context-menu-item" onClick={() => {
+                handleCreateFolderFromMenu();
+                closeContextMenu();
+              }}>
+                <FolderPlus size={14} /> 新規フォルダ
+              </div>
+              <div className="context-menu-divider"></div>
+            </>
+          )}
+          {contextMenu.targetItem.kind === 'file' && (
+            <div className="context-menu-item" onClick={() => {
+              handleRenameFromMenu();
+              closeContextMenu();
+            }}>
+              <Edit3 size={14} /> 名前を変更
+            </div>
+          )}
+          <div className="context-menu-item danger" onClick={() => {
+            handleDeleteFromMenu();
+            closeContextMenu();
+          }}>
+            <Trash2 size={14} /> 削除
+          </div>
+        </div>
+      )}
     </div>
   );
 }
