@@ -8,6 +8,17 @@ import './index.css';
 const DB_NAME = 'WebMemoNoteDB';
 const STORE_NAME = 'settings';
 
+const ALLOWED_EXTENSIONS = [
+  '.txt', '.md', '.csv', '.tsv', '.log',
+  '.json', '.yml', '.yaml', '.xml', '.toml', '.ini', '.env',
+  '.html', '.css', '.scss', '.js', '.jsx', '.ts', '.tsx', '.vue', '.svelte',
+  '.py', '.java', '.c', '.cpp', '.h', '.cs', '.go', '.rs', '.rb', '.php', '.sh', '.bat', '.ps1',
+  '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico',
+  '.pdf',
+  '.mp4', '.webm', '.mp3', '.wav'
+];
+const ALLOWED_EXACT_NAMES = ['.gitignore', '.env', '.prettierrc', '.eslintrc'];
+
 function openDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -214,7 +225,8 @@ export default function App() {
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState('edit'); // 'edit', 'preview', 'split'
+  const [viewMode, setViewMode] = useState('edit'); // 'edit', 'preview', 'split', 'media'
+  const [mediaData, setMediaData] = useState(null); // { url, type: 'image'|'pdf'|'video'|'audio' }
   const [tabNames, setTabNames] = useState([]);
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -409,12 +421,17 @@ export default function App() {
     for await (const entry of dirHandle.values()) {
       const currentPath = pathPrefix + '/' + entry.name;
       if (entry.kind === 'file') {
-        if (entry.name.endsWith('.txt') || entry.name.endsWith('.md')) {
+        const lowerName = entry.name.toLowerCase();
+        const ext = lowerName.substring(lowerName.lastIndexOf('.')) || '';
+        if (ALLOWED_EXTENSIONS.includes(ext) || ALLOWED_EXACT_NAMES.includes(lowerName)) {
           items.push({ name: entry.name, kind: 'file', handle: entry, path: currentPath, parentHandle: dirHandle });
         }
       } else if (entry.kind === 'directory') {
-        const children = await readDir(entry, currentPath, currentDepth + 1);
-        items.push({ name: entry.name, kind: 'directory', handle: entry, children, path: currentPath, parentHandle: dirHandle });
+        // node_modulesや.gitなどの重いフォルダはスキップ
+        if (entry.name !== 'node_modules' && entry.name !== '.git' && entry.name !== '.images') {
+          const children = await readDir(entry, currentPath, currentDepth + 1);
+          items.push({ name: entry.name, kind: 'directory', handle: entry, children, path: currentPath, parentHandle: dirHandle });
+        }
       }
     }
     return items.sort((a, b) => {
@@ -454,27 +471,54 @@ export default function App() {
 
     try {
       const file = await fileItem.handle.getFile();
-      const buffer = await file.arrayBuffer();
+      const lowerName = fileItem.name.toLowerCase();
       
-      let text = '';
-      try {
-        const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
-        text = utf8Decoder.decode(buffer);
-      } catch (e) {
-        // Fallback to Shift-JIS if UTF-8 decoding fails
-        const sjisDecoder = new TextDecoder('shift_jis');
-        text = sjisDecoder.decode(buffer);
-      }
+      // メディア判定
+      const isImage = /\.(png|jpg|jpeg|gif|webp|svg|ico)$/.test(lowerName);
+      const isPdf = /\.pdf$/.test(lowerName);
+      const isVideo = /\.(mp4|webm)$/.test(lowerName);
+      const isAudio = /\.(mp3|wav)$/.test(lowerName);
 
-      setSelectedFile(fileItem);
-      setEditorContent(text);
-      setIsDirty(false);
-      setLastSaved(null);
-      setError(null);
-      if (fileItem.name.endsWith('.md')) {
-        setViewMode('split');
+      // 以前のObjectURLを解放
+      if (mediaData?.url) URL.revokeObjectURL(mediaData.url);
+
+      if (isImage || isPdf || isVideo || isAudio) {
+        const url = URL.createObjectURL(file);
+        let type = 'image';
+        if (isPdf) type = 'pdf';
+        if (isVideo) type = 'video';
+        if (isAudio) type = 'audio';
+
+        setSelectedFile(fileItem);
+        setMediaData({ url, type });
+        setEditorContent('');
+        setIsDirty(false);
+        setLastSaved(null);
+        setError(null);
+        setViewMode('media');
       } else {
-        setViewMode('edit');
+        const buffer = await file.arrayBuffer();
+        let text = '';
+        try {
+          const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+          text = utf8Decoder.decode(buffer);
+        } catch (e) {
+          const sjisDecoder = new TextDecoder('shift_jis');
+          text = sjisDecoder.decode(buffer);
+        }
+
+        setSelectedFile(fileItem);
+        setMediaData(null);
+        setEditorContent(text);
+        setIsDirty(false);
+        setLastSaved(null);
+        setError(null);
+        
+        if (fileItem.name.endsWith('.md')) {
+          setViewMode('split');
+        } else {
+          setViewMode('edit');
+        }
       }
     } catch (err) {
       setError(`ファイルの読み込みに失敗しました: ${err.message}`);
@@ -1201,6 +1245,19 @@ export default function App() {
                   >
                     {editorContent}
                   </ReactMarkdown>
+                </div>
+              )}
+
+              {viewMode === 'media' && mediaData && (
+                <div className="media-viewer">
+                  {mediaData.type === 'image' && <img src={mediaData.url} alt="preview" />}
+                  {mediaData.type === 'pdf' && <iframe src={mediaData.url} title="pdf-preview" width="100%" height="100%" style={{ border: 'none' }} />}
+                  {mediaData.type === 'video' && <video src={mediaData.url} controls width="100%" />}
+                  {mediaData.type === 'audio' && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <audio src={mediaData.url} controls />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
