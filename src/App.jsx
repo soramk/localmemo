@@ -149,6 +149,43 @@ export default function App() {
   const [starredFiles, setStarredFiles] = useState([]);
   
   const textareaRef = useRef(null);
+  const previewRef = useRef(null);
+  const isSyncingLeft = useRef(false);
+  const isSyncingRight = useRef(false);
+
+  const handleEditorScroll = (e) => {
+    if (viewMode !== 'split' || !previewRef.current) return;
+    if (isSyncingLeft.current) {
+      isSyncingLeft.current = false;
+      return;
+    }
+    isSyncingRight.current = true;
+    
+    const textarea = e.target;
+    const maxScrollTop = textarea.scrollHeight - textarea.clientHeight;
+    if (maxScrollTop <= 0) return;
+    
+    const scrollPercentage = textarea.scrollTop / maxScrollTop;
+    const preview = previewRef.current;
+    preview.scrollTop = scrollPercentage * (preview.scrollHeight - preview.clientHeight);
+  };
+
+  const handlePreviewScroll = (e) => {
+    if (viewMode !== 'split' || !textareaRef.current) return;
+    if (isSyncingRight.current) {
+      isSyncingRight.current = false;
+      return;
+    }
+    isSyncingLeft.current = true;
+    
+    const preview = e.target;
+    const maxScrollTop = preview.scrollHeight - preview.clientHeight;
+    if (maxScrollTop <= 0) return;
+    
+    const scrollPercentage = preview.scrollTop / maxScrollTop;
+    const textarea = textareaRef.current;
+    textarea.scrollTop = scrollPercentage * (textarea.scrollHeight - textarea.clientHeight);
+  };
 
   // Settings State
   const [editorSettings, setEditorSettings] = useState({
@@ -912,18 +949,18 @@ export default function App() {
                     <Edit2 size={16} />
                   </button>
                   <button 
-                    onClick={() => setViewMode('split')} 
-                    className={`btn-icon ${viewMode === 'split' ? 'active' : ''}`} 
-                    title="2ペイン表示"
-                  >
-                    <Columns size={16} />
-                  </button>
-                  <button 
                     onClick={() => setViewMode('preview')} 
                     className={`btn-icon ${viewMode === 'preview' ? 'active' : ''}`} 
                     title="プレビューモード"
                   >
                     <Eye size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setViewMode('split')} 
+                    className={`btn-icon ${viewMode === 'split' ? 'active' : ''}`} 
+                    title="2ペイン表示"
+                  >
+                    <Columns size={16} />
                   </button>
                 </div>
 
@@ -950,6 +987,7 @@ export default function App() {
                   }}
                   value={editorContent}
                   onChange={handleEditorChange}
+                  onScroll={handleEditorScroll}
                   onDrop={handleEditorDrop}
                   onDragOver={(e) => e.preventDefault()}
                   onKeyDown={(e) => {
@@ -977,12 +1015,17 @@ export default function App() {
               )}
               
               {(viewMode === 'preview' || viewMode === 'split') && (
-                <div className="markdown-preview" style={{
-                  fontFamily: editorSettings.fontFamily,
-                  fontSize: editorSettings.fontSize,
-                  letterSpacing: editorSettings.letterSpacing,
-                  color: editorSettings.fontColor
-                }}>
+                <div 
+                  ref={previewRef}
+                  onScroll={handlePreviewScroll}
+                  className="markdown-preview" 
+                  style={{
+                    fontFamily: editorSettings.fontFamily,
+                    fontSize: editorSettings.fontSize,
+                    letterSpacing: editorSettings.letterSpacing,
+                    color: editorSettings.fontColor
+                  }}
+                >
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {editorContent}
                   </ReactMarkdown>
