@@ -342,9 +342,9 @@ export default function App() {
       setLastSaved(null);
       setError(null);
       if (fileItem.name.endsWith('.md')) {
-        setIsPreviewMode(true);
+        setViewMode('split');
       } else {
-        setIsPreviewMode(false);
+        setViewMode('edit');
       }
     } catch (err) {
       setError(`ファイルの読み込みに失敗しました: ${err.message}`);

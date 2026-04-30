@@ -1,16 +1,56 @@
-# React + Vite
+# WebMemoNote (Local Memo App)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**WebMemoNote** は、ブラウザ上で動作するローカルファイル直接編集型のプレミアムなMarkdown/テキストエディタです。
+File System Access APIを活用し、サーバーを介さずにPC上のローカルフォルダを直接マウント・編集できる「完全ローカルファースト」な設計が特徴です。
 
-Currently, two official plugins are available:
+## 🌟 主な機能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+* **ローカルファイル直接アクセス**: `showDirectoryPicker` を用い、PC上の任意のフォルダを直接アプリに読み込んで編集可能。サーバーへのデータ送信は一切ありません。
+* **高機能Markdownエディタ**:
+  * 編集モード / プレビューモード / **左右2ペイン（分割）リアルタイムプレビュー**
+  * `remark-gfm` によるGitHub Flavored Markdown対応
+* **ドラッグ＆ドロップ操作によるファイル管理**:
+  * ファイル同士を重ね合わせることで自動的に「フォルダ化（グループ化）」
+  * 最大5階層までのネストされたツリー表示に完全対応
+* **高度なカスタマイズ設定**:
+  * **ダークモード切り替え** (ライト/ダーク/OS連動)
+  * フォントファミリー、フォントサイズ、文字間隔、フォントカラーの細かな調整
+  * Tabキーの挙動変更 (スペース2文字、スペース4文字、Tab文字)
+* **画像ドラッグ＆ドロップ添付**:
+  * エディタ内に画像ファイルをドロップすると、裏側に `.images` フォルダを自動生成してローカルに保存し、Markdownの画像リンクタグを瞬時に挿入。
+* **検索＆お気に入り機能**:
+  * キーワードによる瞬時のファイル絞り込み
+  * 重要なメモに「★（スター）」を付けて「お気に入りタブ」に常時ピン留め可能
+* **堅牢なローカル状態保存**:
+  * カスタム設定やスター状態、前回開いたフォルダのキャッシュなどを `IndexedDB` に永続化。リロード後もワンクリックで作業を再開可能。
 
-## React Compiler
+## 🛠️ 技術スタック
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* **Framework**: React 18 / Vite
+* **Styling**: Vanilla CSS (Tailwind等の外部フレームワークに依存せず、カスタム変数を活用したダークモードやモダンなUIを実装)
+* **Icons**: lucide-react
+* **Markdown**: react-markdown, remark-gfm
+* **Core API**: File System Access API, IndexedDB
 
-## Expanding the ESLint configuration
+## 🚀 使い方
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### ローカルでの開発・起動
+```bash
+# 依存関係のインストール
+npm install
+
+# 開発サーバーの起動
+npm run dev
+
+# プロダクションビルド
+npm run build
+```
+
+### GitHub Pages での公開設定
+1. 本リポジトリを自身のGitHubアカウントにプッシュします。
+2. リポジトリの `Settings` > `Pages` にアクセスします。
+3. `Source` を **"GitHub Actions"** に設定します。
+4. `.github/workflows/deploy.yml` に従って自動的にビルドされ、指定のURLからアクセス可能になります。
+
+---
+*注: 本アプリは最新のWeb標準である「File System Access API」を使用しているため、PC版の Chrome, Edge などの対応ブラウザでのご利用を推奨します。*
