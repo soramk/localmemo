@@ -478,6 +478,7 @@ export default function App() {
       const isPdf = /\.pdf$/.test(lowerName);
       const isVideo = /\.(mp4|webm)$/.test(lowerName);
       const isAudio = /\.(mp3|wav)$/.test(lowerName);
+      const isHtml = /\.html$/.test(lowerName);
 
       // 以前のObjectURLを解放
       if (mediaData?.url) URL.revokeObjectURL(mediaData.url);
@@ -508,13 +509,13 @@ export default function App() {
         }
 
         setSelectedFile(fileItem);
-        setMediaData(null);
+        setMediaData(isHtml ? { type: 'html' } : null); // HTMLの場合はフラグを立てる
         setEditorContent(text);
         setIsDirty(false);
         setLastSaved(null);
         setError(null);
         
-        if (fileItem.name.endsWith('.md')) {
+        if (fileItem.name.endsWith('.md') || isHtml) {
           setViewMode('split');
         } else {
           setViewMode('edit');
@@ -1237,14 +1238,23 @@ export default function App() {
                     color: editorSettings.fontColor
                   }}
                 >
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      img: ({node, ...props}) => <CustomImage {...props} selectedFile={selectedFile} />
-                    }}
-                  >
-                    {editorContent}
-                  </ReactMarkdown>
+                  {mediaData?.type === 'html' ? (
+                    <iframe 
+                      srcDoc={editorContent} 
+                      title="html-preview" 
+                      style={{ width: '100%', height: '100%', border: 'none', background: 'white' }} 
+                      sandbox="allow-scripts"
+                    />
+                  ) : (
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        img: ({node, ...props}) => <CustomImage {...props} selectedFile={selectedFile} />
+                      }}
+                    >
+                      {editorContent}
+                    </ReactMarkdown>
+                  )}
                 </div>
               )}
 
