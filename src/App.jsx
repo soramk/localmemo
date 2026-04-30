@@ -39,6 +39,68 @@ async function getVal(key) {
   });
 }
 
+const CustomImage = ({ src, alt, selectedFile }) => {
+  const [imgSrc, setImgSrc] = useState(null);
+
+  useEffect(() => {
+    let objectUrl = null;
+    
+    const loadImage = async () => {
+      if (!src) return;
+      if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) {
+        setImgSrc(src);
+        return;
+      }
+      
+      if (!selectedFile || !selectedFile.parentHandle) {
+        setImgSrc(src);
+        return;
+      }
+
+      try {
+        let cleanPath = src;
+        if (cleanPath.startsWith('./')) cleanPath = cleanPath.slice(2);
+        
+        const parts = cleanPath.split('/');
+        let currentHandle = selectedFile.parentHandle;
+        
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          if (part === '.' || part === '') continue;
+          if (part === '..') {
+            // Can't easily traverse up via parentHandle, fallback
+            throw new Error("Relative path '../' not supported via this simple loader.");
+          }
+          if (i === parts.length - 1) {
+            const fileHandle = await currentHandle.getFileHandle(part);
+            const file = await fileHandle.getFile();
+            objectUrl = URL.createObjectURL(file);
+            setImgSrc(objectUrl);
+            return;
+          } else {
+            currentHandle = await currentHandle.getDirectoryHandle(part);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load local image:", src, err);
+        setImgSrc(src); // Fallback to broken src
+      }
+    };
+    
+    loadImage();
+    
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [src, selectedFile]);
+
+  if (!imgSrc) return <span style={{color: 'var(--text-muted)'}}>Loading image...</span>;
+  
+  return <img src={imgSrc} alt={alt} style={{ maxWidth: '100%', borderRadius: '8px' }} />;
+};
+
 const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, draggedItem, setDraggedItem, handleDropOnItem, starredFiles, toggleStar, onContextMenu }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isOver, setIsOver] = useState(false);
@@ -1129,7 +1191,12 @@ export default function App() {
                     color: editorSettings.fontColor
                   }}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({node, ...props}) => <CustomImage {...props} selectedFile={selectedFile} />
+                    }}
+                  >
                     {editorContent}
                   </ReactMarkdown>
                 </div>
