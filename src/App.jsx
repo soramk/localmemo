@@ -1045,7 +1045,14 @@ export default function App() {
         </div>
 
         {/* File List */}
-        <div className="file-list">
+        <div 
+          className="file-list"
+          onContextMenu={(e) => {
+            if (directoryHandle) {
+              handleContextMenu(e, { kind: 'directory', handle: directoryHandle, name: 'ルート', isRoot: true });
+            }
+          }}
+        >
           {files.length === 0 && !directoryHandle && (
             <div className="empty-state">
               <FolderOpen size={32} className="empty-state-icon" />
@@ -1328,12 +1335,14 @@ export default function App() {
               <Edit3 size={14} /> 名前を変更
             </div>
           )}
-          <div className="context-menu-item danger" onClick={() => {
-            handleDeleteFromMenu();
-            closeContextMenu();
-          }}>
-            <Trash2 size={14} /> 削除
-          </div>
+          {!contextMenu.targetItem.isRoot && (
+            <div className="context-menu-item danger" onClick={() => {
+              handleDeleteFromMenu();
+              closeContextMenu();
+            }}>
+              <Trash2 size={14} /> 削除
+            </div>
+          )}
         </div>
       )}
     </div>
