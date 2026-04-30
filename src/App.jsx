@@ -436,7 +436,8 @@ export default function App() {
     }
     return items.sort((a, b) => {
       if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
-      return a.name.localeCompare(b.name);
+      // 自然順ソート（1, 2, 10, 11 の順になるように設定）
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
     });
   };
 
@@ -1242,7 +1243,9 @@ export default function App() {
                     fontFamily: editorSettings.fontFamily,
                     fontSize: editorSettings.fontSize,
                     letterSpacing: editorSettings.letterSpacing,
-                    color: editorSettings.fontColor
+                    color: editorSettings.fontColor,
+                    padding: mediaData?.type === 'html' ? 0 : undefined,
+                    overflow: mediaData?.type === 'html' ? 'hidden' : undefined
                   }}
                 >
                   {mediaData?.type === 'html' ? (
