@@ -1026,6 +1026,7 @@ export default function App() {
                 handleDropOnItem={handleDropOnItem}
                 starredFiles={starredFiles}
                 toggleStar={toggleStar}
+                onContextMenu={handleContextMenu}
               />
             )) : (
               <div className="empty-state">一致するファイルがありません</div>
@@ -1043,6 +1044,7 @@ export default function App() {
                 handleDropOnItem={handleDropOnItem}
                 starredFiles={starredFiles}
                 toggleStar={toggleStar}
+                onContextMenu={handleContextMenu}
               />
             ))
           )}
