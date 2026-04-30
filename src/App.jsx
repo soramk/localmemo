@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './index.css';
@@ -39,7 +39,7 @@ async function getVal(key) {
   });
 }
 
-const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, draggedItem, setDraggedItem, handleDropOnItem }) => {
+const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, draggedItem, setDraggedItem, handleDropOnItem, starredFiles, toggleStar }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isOver, setIsOver] = useState(false);
 
@@ -47,9 +47,26 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, dragged
     return (
       <div>
         <div 
-          className="file-item"
+          className={`file-item ${isOver ? 'drag-over' : ''}`}
           style={{ paddingLeft: `${level * 12 + 8}px` }}
           onClick={() => setIsOpen(!isOpen)}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOver(true);
+          }}
+          onDragLeave={(e) => {
+            setIsOver(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOver(false);
+            if (draggedItem && draggedItem.path !== item.path) {
+              handleDropOnItem(draggedItem, item);
+            }
+            setDraggedItem(null);
+          }}
         >
           <div className="file-item-icon">
             {isOpen ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
@@ -67,6 +84,8 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, dragged
             draggedItem={draggedItem}
             setDraggedItem={setDraggedItem}
             handleDropOnItem={handleDropOnItem}
+            starredFiles={starredFiles}
+            toggleStar={toggleStar}
           />
         ))}
       </div>
@@ -74,6 +93,8 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, dragged
   }
 
   const isSelected = selectedFile?.path === item.path;
+  const isStarred = starredFiles && starredFiles.includes(item.path);
+
   return (
     <div 
       className={`file-item ${isSelected ? 'selected' : ''} ${isOver ? 'drag-over' : ''}`}
@@ -105,7 +126,8 @@ const FileTreeItem = ({ item, level = 0, selectedFile, handleSelectFile, dragged
       <div className="file-item-icon">
         <FileText size={14} className="icon-file" />
       </div>
-      <span>{item.name}</span>
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+      {isStarred && <Star size={12} className="star-icon active" style={{ marginLeft: 'auto' }} />}
     </div>
   );
 };
@@ -120,9 +142,26 @@ export default function App() {
   const [isDirty, setIsDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState(null);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [viewMode, setViewMode] = useState('edit'); // 'edit', 'preview', 'split'
   const [tabNames, setTabNames] = useState([]);
   
+  const [searchQuery, setSearchQuery] = useState('');
+  const [starredFiles, setStarredFiles] = useState([]);
+  
+  const textareaRef = useRef(null);
+
+  // Settings State
+  const [editorSettings, setEditorSettings] = useState({
+    fontFamily: 'inherit',
+    fontSize: '1rem',
+    letterSpacing: 'normal',
+    fontColor: 'var(--text-main)',
+    tabSize: '2', // '2', '4', 'tab'
+    theme: 'system' // 'light', 'dark', 'system'
+  });
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [tempSettings, setTempSettings] = useState(editorSettings);
+
   // Modal states
   const [isNewFileModalOpen, setIsNewFileModalOpen] = useState(false);
   const [newFileName, setNewFileName] = useState('');
@@ -144,9 +183,21 @@ export default function App() {
     setFiles(tree);
   };
 
-  // Restore directory handle on startup
+  // Restore directory handle on startup and load settings
   useEffect(() => {
-    const loadSavedHandle = async () => {
+    const loadInitData = async () => {
+      try {
+        const savedSettings = await getVal('editorSettings');
+        if (savedSettings) {
+          setEditorSettings(savedSettings);
+        }
+      } catch (e) { console.log(e); }
+
+      try {
+        const savedStars = await getVal('starredFiles');
+        if (savedStars) setStarredFiles(savedStars);
+      } catch (e) { console.log(e); }
+
       try {
         const handle = await getVal('directoryHandle');
         if (handle) {
@@ -161,8 +212,47 @@ export default function App() {
         console.log("Failed to load saved handle", err);
       }
     };
-    loadSavedHandle();
+    loadInitData();
   }, []);
+
+  // Theme apply
+  useEffect(() => {
+    if (editorSettings.theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (editorSettings.theme === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
+      else document.documentElement.removeAttribute('data-theme');
+    }
+  }, [editorSettings.theme]);
+
+  const toggleStar = async (filePath) => {
+    const newStars = starredFiles.includes(filePath) 
+      ? starredFiles.filter(p => p !== filePath)
+      : [...starredFiles, filePath];
+    setStarredFiles(newStars);
+    await setVal('starredFiles', newStars);
+  };
+
+  const flattenedFiles = useMemo(() => {
+    const flat = [];
+    const recurse = (items) => {
+      items.forEach(item => {
+        if (item.kind === 'file') flat.push(item);
+        if (item.children) recurse(item.children);
+      });
+    };
+    recurse(files);
+    return flat;
+  }, [files]);
+  
+  const searchResults = useMemo(() => {
+    if (!searchQuery) return [];
+    const lowerQuery = searchQuery.toLowerCase();
+    return flattenedFiles.filter(f => f.name.toLowerCase().includes(lowerQuery));
+  }, [searchQuery, flattenedFiles]);
 
   const handleResumeFolder = async () => {
     if (!savedHandle) return;
@@ -356,6 +446,14 @@ export default function App() {
     const newTabs = [];
     const rootDirs = files.filter(f => f.kind === 'directory');
     
+    // Favorites Tab
+    if (starredFiles.length > 0) {
+      const favItems = flattenedFiles.filter(f => starredFiles.includes(f.path));
+      if (favItems.length > 0) {
+        newTabs.push({ name: '★ お気に入り', items: favItems, isSpecial: true });
+      }
+    }
+
     // Main tab contains root files and non-tab root directories
     const mainItems = files.filter(f => 
       f.kind === 'file' || (f.kind === 'directory' && !tabNames.includes(f.name))
@@ -374,7 +472,7 @@ export default function App() {
     });
     
     return newTabs;
-  }, [files, tabNames]);
+  }, [files, tabNames, starredFiles, flattenedFiles]);
 
   useEffect(() => {
     if (tabs.length > 0) {
@@ -454,6 +552,50 @@ export default function App() {
     }
   };
 
+  const handleEditorDrop = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+    
+    const items = e.dataTransfer.items;
+    let imageFile = null;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image/') === 0) {
+        imageFile = items[i].getAsFile();
+        break;
+      }
+    }
+
+    if (imageFile) {
+      try {
+        const rootHandle = selectedFile.parentHandle;
+        const imagesDir = await rootHandle.getDirectoryHandle('.images', { create: true });
+        const imgName = `${Date.now()}_${imageFile.name}`;
+        const newImgHandle = await imagesDir.getFileHandle(imgName, { create: true });
+        const writable = await newImgHandle.createWritable();
+        await writable.write(imageFile);
+        await writable.close();
+
+        const imgPath = `./.images/${imgName}`;
+        const mdImage = `\n![${imageFile.name}](${imgPath})\n`;
+        
+        const target = e.target;
+        const start = target.selectionStart;
+        const end = target.selectionEnd;
+        const newText = editorContent.substring(0, start) + mdImage + editorContent.substring(end);
+        
+        setEditorContent(newText);
+        setIsDirty(true);
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + mdImage.length;
+          }
+        }, 0);
+      } catch (err) {
+        setError(`画像の保存に失敗しました: ${err.message}`);
+      }
+    }
+  };
+
   const handleAddTab = async () => {
     if (!directoryHandle) return;
     const tabName = window.prompt("新しいタブ（フォルダ）の名前を入力してください:");
@@ -507,6 +649,103 @@ export default function App() {
         </div>
       )}
 
+      {/* Settings Modal */}
+      {isSettingsModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">エディタ設定</h3>
+            <div className="modal-input-group">
+              <div>
+                <label className="modal-label">フォントファミリー</label>
+                <select 
+                  className="modal-input" 
+                  value={tempSettings.fontFamily} 
+                  onChange={e => setTempSettings({...tempSettings, fontFamily: e.target.value})}
+                >
+                  <option value="inherit">デフォルト (System)</option>
+                  <option value="sans-serif">ゴシック体 (Sans-Serif)</option>
+                  <option value="serif">明朝体 (Serif)</option>
+                  <option value="monospace">等幅 (Monospace)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="modal-label">フォントサイズ</label>
+                <select 
+                  className="modal-input" 
+                  value={tempSettings.fontSize} 
+                  onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
+                >
+                  <option value="0.875rem">小 (14px)</option>
+                  <option value="1rem">標準 (16px)</option>
+                  <option value="1.125rem">大 (18px)</option>
+                  <option value="1.25rem">特大 (20px)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="modal-label">文字間隔 (Letter Spacing)</label>
+                <select 
+                  className="modal-input" 
+                  value={tempSettings.letterSpacing} 
+                  onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
+                >
+                  <option value="normal">標準</option>
+                  <option value="0.5px">少し広い (0.5px)</option>
+                  <option value="1px">広い (1px)</option>
+                  <option value="2px">とても広い (2px)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="modal-label">フォント色</label>
+                <input 
+                  type="color" 
+                  className="modal-input" 
+                  style={{ padding: '4px', height: '40px', cursor: 'pointer' }}
+                  value={tempSettings.fontColor} 
+                  onChange={e => setTempSettings({...tempSettings, fontColor: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="modal-label">テーマ</label>
+                <select 
+                  className="modal-input" 
+                  value={tempSettings.theme} 
+                  onChange={e => setTempSettings({...tempSettings, theme: e.target.value})}
+                >
+                  <option value="system">OSのシステム設定に合わせる</option>
+                  <option value="light">ライトモード</option>
+                  <option value="dark">ダークモード</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="modal-label">Tabキーの挙動</label>
+                <select 
+                  className="modal-input" 
+                  value={tempSettings.tabSize} 
+                  onChange={e => setTempSettings({...tempSettings, tabSize: e.target.value})}
+                >
+                  <option value="2">スペース2つ</option>
+                  <option value="4">スペース4つ</option>
+                  <option value="tab">Tab文字 (\t)</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setIsSettingsModalOpen(false)}>キャンセル</button>
+              <button className="btn-primary-solid" onClick={async () => {
+                setEditorSettings(tempSettings);
+                await setVal('editorSettings', tempSettings);
+                setIsSettingsModalOpen(false);
+              }}>保存</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">
@@ -514,6 +753,21 @@ export default function App() {
           WebMemoNote
         </div>
         
+        {directoryHandle && (
+          <div className="search-container">
+            <div className="search-input-wrapper">
+              <Search size={16} className="search-icon" />
+              <input 
+                type="text" 
+                className="search-input" 
+                placeholder="ファイル名で検索..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="sidebar-actions">
           <button onClick={handleOpenFolder} className="btn btn-primary">
             <FolderOpen size={16} />
@@ -533,6 +787,12 @@ export default function App() {
                 <Plus size={16} />
                 新規メモ
               </button>
+              <button onClick={() => {
+                setTempSettings(editorSettings);
+                setIsSettingsModalOpen(true);
+              }} className="btn-icon" title="エディタ設定">
+                <Settings size={16} />
+              </button>
             </div>
           )}
         </div>
@@ -545,37 +805,59 @@ export default function App() {
               メモが保存されている<br/>フォルダを選択してください
             </div>
           )}
-          {tabs.length === 0 && directoryHandle && (
+          {tabs.length === 0 && directoryHandle && !searchQuery && (
             <div className="empty-state">
               メモが見つかりません
             </div>
           )}
           
-          {tabs.find(t => t.name === activeTabName)?.items.map(item => (
-            <FileTreeItem 
-              key={item.path} 
-              item={item} 
-              level={0} 
-              selectedFile={selectedFile} 
-              handleSelectFile={handleSelectFile} 
-              draggedItem={draggedItem}
-              setDraggedItem={setDraggedItem}
-              handleDropOnItem={handleDropOnItem}
-            />
-          ))}
+          {searchQuery ? (
+            searchResults.length > 0 ? searchResults.map(item => (
+              <FileTreeItem 
+                key={item.path} 
+                item={item} 
+                level={0} 
+                selectedFile={selectedFile} 
+                handleSelectFile={handleSelectFile} 
+                draggedItem={draggedItem}
+                setDraggedItem={setDraggedItem}
+                handleDropOnItem={handleDropOnItem}
+                starredFiles={starredFiles}
+                toggleStar={toggleStar}
+              />
+            )) : (
+              <div className="empty-state">一致するファイルがありません</div>
+            )
+          ) : (
+            tabs.find(t => t.name === activeTabName)?.items.map(item => (
+              <FileTreeItem 
+                key={item.path} 
+                item={item} 
+                level={0} 
+                selectedFile={selectedFile} 
+                handleSelectFile={handleSelectFile} 
+                draggedItem={draggedItem}
+                setDraggedItem={setDraggedItem}
+                handleDropOnItem={handleDropOnItem}
+                starredFiles={starredFiles}
+                toggleStar={toggleStar}
+              />
+            ))
+          )}
         </div>
       </div>
 
       {/* Main Area */}
       <div className="main-area">
         {/* Tabs moved to main area top */}
-        {tabs.length > 0 && (
+        {tabs.length > 0 && !searchQuery && (
           <div className="tabs-container">
             {tabs.map(tab => (
               <button
                 key={tab.name}
                 onClick={() => setActiveTabName(tab.name)}
                 className={`tab ${activeTabName === tab.name ? 'active' : ''}`}
+                style={tab.isSpecial ? { color: '#FBBF24', fontWeight: 'bold' } : {}}
               >
                 {tab.name}
               </button>
@@ -599,6 +881,12 @@ export default function App() {
               <div className="editor-path">
                 <FileText size={16} color="#9CA3AF" />
                 {selectedFile.path.split('/').join(' / ')}
+                <button 
+                  onClick={() => toggleStar(selectedFile.path)}
+                  style={{ background: 'none', border: 'none', padding: 0, display: 'flex', marginLeft: '4px' }}
+                >
+                  <Star size={16} className={`star-icon ${starredFiles.includes(selectedFile.path) ? 'active' : ''}`} />
+                </button>
               </div>
               <div className="editor-actions">
                 <div className="editor-status">
@@ -615,13 +903,30 @@ export default function App() {
                   ) : null}
                 </div>
                 
-                <button 
-                  onClick={() => setIsPreviewMode(!isPreviewMode)} 
-                  className="btn-icon" 
-                  title={isPreviewMode ? "編集モード" : "プレビュー"}
-                >
-                  {isPreviewMode ? <Edit2 size={16} /> : <Eye size={16} />}
-                </button>
+                <div style={{ display: 'flex', gap: '4px', borderRight: '1px solid var(--border-color)', paddingRight: '12px', marginRight: '4px' }}>
+                  <button 
+                    onClick={() => setViewMode('edit')} 
+                    className={`btn-icon ${viewMode === 'edit' ? 'active' : ''}`} 
+                    title="編集モード"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setViewMode('split')} 
+                    className={`btn-icon ${viewMode === 'split' ? 'active' : ''}`} 
+                    title="2ペイン表示"
+                  >
+                    <Columns size={16} />
+                  </button>
+                  <button 
+                    onClick={() => setViewMode('preview')} 
+                    className={`btn-icon ${viewMode === 'preview' ? 'active' : ''}`} 
+                    title="プレビューモード"
+                  >
+                    <Eye size={16} />
+                  </button>
+                </div>
+
                 <button 
                   onClick={handleDeleteFile} 
                   className="btn-icon btn-icon-danger" 
@@ -632,21 +937,58 @@ export default function App() {
               </div>
             </div>
             
-            {isPreviewMode ? (
-              <div className="markdown-preview">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {editorContent}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <textarea
-                className="editor-textarea"
-                value={editorContent}
-                onChange={handleEditorChange}
-                placeholder="メモを入力..."
-                spellCheck="false"
-              />
-            )}
+            <div className={`editor-content-wrapper ${viewMode === 'split' ? 'split' : ''}`}>
+              {(viewMode === 'edit' || viewMode === 'split') && (
+                <textarea
+                  ref={textareaRef}
+                  className="editor-textarea"
+                  style={{
+                    fontFamily: editorSettings.fontFamily,
+                    fontSize: editorSettings.fontSize,
+                    letterSpacing: editorSettings.letterSpacing,
+                    color: editorSettings.fontColor
+                  }}
+                  value={editorContent}
+                  onChange={handleEditorChange}
+                  onDrop={handleEditorDrop}
+                  onDragOver={(e) => e.preventDefault()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Tab') {
+                      e.preventDefault();
+                      const target = e.target;
+                      const start = target.selectionStart;
+                      const end = target.selectionEnd;
+                      const tabStr = editorSettings.tabSize === 'tab' ? '\t' : ' '.repeat(parseInt(editorSettings.tabSize, 10));
+                      
+                      const newText = editorContent.substring(0, start) + tabStr + editorContent.substring(end);
+                      setEditorContent(newText);
+                      setIsDirty(true);
+                      
+                      setTimeout(() => {
+                        if (textareaRef.current) {
+                          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + tabStr.length;
+                        }
+                      }, 0);
+                    }
+                  }}
+                  placeholder="メモを入力... (画像をドラッグ＆ドロップで添付できます)"
+                  spellCheck="false"
+                />
+              )}
+              
+              {(viewMode === 'preview' || viewMode === 'split') && (
+                <div className="markdown-preview" style={{
+                  fontFamily: editorSettings.fontFamily,
+                  fontSize: editorSettings.fontSize,
+                  letterSpacing: editorSettings.letterSpacing,
+                  color: editorSettings.fontColor
+                }}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {editorContent}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <div className="welcome-screen">
