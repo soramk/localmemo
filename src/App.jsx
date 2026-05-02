@@ -310,6 +310,7 @@ export default function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [isMoveToTabModalOpen, setIsMoveToTabModalOpen] = useState(false);
   const [moveTargetItem, setMoveTargetItem] = useState(null);
   const [tempSettings, setTempSettings] = useState(DEFAULT_SETTINGS);
 
@@ -1617,6 +1618,42 @@ export default function App() {
         </div>
       )}
 
+      {/* Move To Tab Modal */}
+      {isMoveToTabModalOpen && moveTargetItem && (
+        <div className="modal-overlay" onClick={() => setIsMoveToTabModalOpen(false)}>
+          <div className="modal-content move-modal" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">「{moveTargetItem.name}」をタブへ移動</h3>
+            <div className="move-folder-list">
+              {tabs.filter(t => !t.isSpecial).map(tab => (
+                <div 
+                  key={tab.name} 
+                  className="move-folder-item" 
+                  onClick={async () => {
+                    let targetDir = null;
+                    if (tab.name === 'メイン') {
+                      targetDir = { handle: directoryHandle, kind: 'directory', path: directoryHandle.name };
+                    } else {
+                      const tabDir = files.find(f => f.kind === 'directory' && f.name === tab.name);
+                      if (tabDir) targetDir = tabDir;
+                    }
+                    if (targetDir) {
+                      await executeMove(moveTargetItem, targetDir);
+                      setIsMoveToTabModalOpen(false);
+                    }
+                  }}
+                >
+                  <Columns size={16} className="icon-file" style={{ color: 'var(--primary)' }} />
+                  <span>{tab.name}</span>
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setIsMoveToTabModalOpen(false)}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Context Menu */}
       {contextMenu.isOpen && contextMenu.targetItem && (
         <div 
@@ -1663,6 +1700,13 @@ export default function App() {
                     closeContextMenu();
                   }}>
                     <Move size={14} /> 指定フォルダへ移動
+                  </div>
+                  <div className="context-menu-item" onClick={() => {
+                    setMoveTargetItem(contextMenu.targetItem);
+                    setIsMoveToTabModalOpen(true);
+                    closeContextMenu();
+                  }}>
+                    <Columns size={14} /> 指定タブへ移動
                   </div>
                 </>
               )}
