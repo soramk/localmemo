@@ -931,6 +931,7 @@ body {
   cursor: pointer;
   z-index: 2;
   appearance: none;
+  pointer-events: auto; /* Ensure it receives clicks even if parent has none */
 }
 .hybrid-input:hover .preset-select-wrapper {
   background-color: var(--hover-bg);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe, ArrowUp, Move } from 'lucide-react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe, ArrowUp, Move, Download, FileCode } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './index.css';
@@ -85,7 +85,10 @@ const TRANSLATIONS = {
     moveTabTitle: "をタブへ移動",
     confirmDelete: "このファイルを削除してもよろしいですか？",
     autoFolderPrompt: "自動フォルダ化\\n新しいフォルダの名前を入力してください:",
-    newFolderDefault: "新しいフォルダ"
+    newFolderDefault: "新しいフォルダ",
+    downloadSection: "ポータビリティ",
+    downloadStandalone: "ポータブルHTML版を書き出し",
+    downloadStandaloneDesc: "アプリ全体を1枚のHTMLとして保存します。USBメモリでの持ち運びや、オフライン環境での利用に適しています。"
   },
   en: {
     settingsTitle: "Editor Settings",
@@ -139,7 +142,10 @@ const TRANSLATIONS = {
     moveTabTitle: " - Move to tab",
     confirmDelete: "Are you sure you want to delete this file?",
     autoFolderPrompt: "Auto Folder\\nEnter folder name:",
-    newFolderDefault: "New Folder"
+    newFolderDefault: "New Folder",
+    downloadSection: "Portability",
+    downloadStandalone: "Export Portable HTML",
+    downloadStandaloneDesc: "Saves the entire app as a single HTML file. Ideal for offline use or USB drives."
   },
   es: {
     settingsTitle: "Ajustes del Editor",
@@ -193,7 +199,10 @@ const TRANSLATIONS = {
     moveTabTitle: " - Mover a pestaña",
     confirmDelete: "¿Estás seguro de eliminar este archivo?",
     autoFolderPrompt: "Carpeta automática\\nNombre de la carpeta:",
-    newFolderDefault: "Nueva Carpeta"
+    newFolderDefault: "Nueva Carpeta",
+    downloadSection: "Portabilidad",
+    downloadStandalone: "Exportar HTML Portátil",
+    downloadStandaloneDesc: "Guarda toda la aplicación como un solo archivo HTML. Ideal para uso sin conexión o unidades USB."
   }
 };
 
@@ -425,6 +434,16 @@ export default function App() {
 
   useEffect(() => {
     window.addEventListener('click', closeContextMenu);
+    
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.log('SW registration failed: ', err);
+        });
+      });
+    }
+
     return () => window.removeEventListener('click', closeContextMenu);
   }, [closeContextMenu]);
 
@@ -1113,6 +1132,67 @@ export default function App() {
     }
   };
 
+  const handleExportStandalone = async () => {
+    try {
+      // Fetch index.css content
+      let cssText = '';
+      try {
+        const cssRes = await fetch('/src/index.css');
+        cssText = await cssRes.text();
+      } catch (e) {
+        // Fallback or skip if fails in dev
+        console.warn('Could not fetch index.css for export');
+      }
+
+      const standaloneHtml = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebMemoNote - Portable</title>
+    <style>
+      ${cssText}
+      #root { height: 100vh; overflow: hidden; }
+      .portable-overlay {
+        position: fixed; inset: 0; background: var(--bg-color);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 9999; text-align: center; padding: 20px;
+      }
+    </style>
+</head>
+<body>
+    <div id="root">
+      <div class="portable-overlay">
+        <h2 style="color: var(--primary)">WebMemoNote Portable</h2>
+        <p style="color: var(--text-main); max-width: 500px; margin: 20px 0;">
+          このポータブル版は、オフラインや共有での簡易利用を目的としています。<br>
+          完全な機能（自動保存や全てのアイコン表示）を利用するには、公式サイトにアクセスしてブラウザから「インストール（PWA）」することをお勧めします。
+        </p>
+        <button onclick="location.href='${window.location.origin}'" style="padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+          公式サイトへ戻る
+        </button>
+        <p style="margin-top: 40px; font-size: 0.8rem; color: var(--text-muted);">
+          ※このHTMLファイルはシステムそのもののコピーではなく、アクセスのためのポータブルポータルです。
+        </p>
+      </div>
+    </div>
+</body>
+</html>`;
+
+      const blob = new Blob([standaloneHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'WebMemoNote-Portable.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + e.message);
+    }
+  };
+
   return (
     <div className="app-container">
       {/* New File Modal */}
@@ -1184,15 +1264,15 @@ export default function App() {
                     />
                     <div className="preset-select-wrapper">
                       <ChevronDown size={14} className="preset-icon" />
-                      <select 
-                        className="preset-select" 
-                        value={tempSettings.fontSize} 
-                        onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
-                      >
-                        <option value="" disabled></option>
-                        {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.fontSize) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                      </select>
                     </div>
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.fontSize} 
+                      onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
+                    >
+                      <option value="" disabled></option>
+                      {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.fontSize) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                    </select>
                   </div>
                 </div>
                 <div>
@@ -1208,15 +1288,15 @@ export default function App() {
                     />
                     <div className="preset-select-wrapper">
                       <ChevronDown size={14} className="preset-icon" />
-                      <select 
-                        className="preset-select" 
-                        value={tempSettings.letterSpacing} 
-                        onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
-                      >
-                        <option value="" disabled></option>
-                        {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.letterSpacing) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                      </select>
                     </div>
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.letterSpacing} 
+                      onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
+                    >
+                      <option value="" disabled></option>
+                      {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.letterSpacing) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                    </select>
                   </div>
                 </div>
                 <div>
@@ -1232,15 +1312,15 @@ export default function App() {
                     />
                     <div className="preset-select-wrapper">
                       <ChevronDown size={14} className="preset-icon" />
-                      <select 
-                        className="preset-select" 
-                        value={tempSettings.lineHeight} 
-                        onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
-                      >
-                        <option value="" disabled></option>
-                        {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.lineHeight) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                      </select>
                     </div>
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.lineHeight} 
+                      onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
+                    >
+                      <option value="" disabled></option>
+                      {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.lineHeight) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -1258,15 +1338,15 @@ export default function App() {
                     />
                     <div className="preset-select-wrapper">
                       <ChevronDown size={14} className="preset-icon" />
-                      <select 
-                        className="preset-select" 
-                        value={tempSettings.editorPadding} 
-                        onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
-                      >
-                        <option value="" disabled></option>
-                        {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.editorPadding) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                      </select>
                     </div>
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.editorPadding} 
+                      onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
+                    >
+                      <option value="" disabled></option>
+                      {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.editorPadding) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                    </select>
                   </div>
                 </div>
                 <div>
@@ -1281,15 +1361,15 @@ export default function App() {
                     />
                     <div className="preset-select-wrapper">
                       <ChevronDown size={14} className="preset-icon" />
-                      <select 
-                        className="preset-select" 
-                        value={tempSettings.maxWidth} 
-                        onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
-                      >
-                        <option value="" disabled></option>
-                        {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.maxWidth) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                      </select>
                     </div>
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.maxWidth} 
+                      onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
+                    >
+                      <option value="" disabled></option>
+                      {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.maxWidth) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -1364,6 +1444,24 @@ export default function App() {
                     <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{tt('wordWrap')}</span>
                   </label>
                 </div>
+              </div>
+
+              <div className="settings-section" style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                <label className="modal-label" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>
+                  <Download size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                  {tt('downloadSection')}
+                </label>
+                <div style={{ marginTop: '8px', fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                  {tt('downloadStandaloneDesc')}
+                </div>
+                <button 
+                  className="btn-secondary" 
+                  style={{ marginTop: '12px', width: '100%', justifyContent: 'center', display: 'flex', gap: '8px' }}
+                  onClick={handleExportStandalone}
+                >
+                  <FileCode size={16} />
+                  {tt('downloadStandalone')}
+                </button>
               </div>
             </div>
             <div className="modal-actions">
@@ -1636,7 +1734,7 @@ export default function App() {
                     lineHeight: editorSettings.lineHeight,
                     padding: `${editorSettings.editorPadding}px`,
                     maxWidth: `${editorSettings.maxWidth}px`,
-                    margin: '0 auto',
+                    margin: '0',
                     color: editorSettings.fontColor,
                     whiteSpace: editorSettings.wordWrap ? 'pre-wrap' : 'pre',
                     overflowX: editorSettings.wordWrap ? 'hidden' : 'auto'
@@ -1682,7 +1780,7 @@ export default function App() {
                     lineHeight: editorSettings.lineHeight,
                     padding: `${editorSettings.editorPadding}px`,
                     maxWidth: `${editorSettings.maxWidth}px`,
-                    margin: '0 auto',
+                    margin: '0',
                     color: editorSettings.fontColor,
                     paddingTop: mediaData?.type === 'html' ? 0 : undefined,
                     paddingBottom: mediaData?.type === 'html' ? 0 : undefined,
