@@ -1175,11 +1175,11 @@ export default function App() {
           このHTMLファイルは、WebMemoNoteへのクイックアクセス用ポータルです。<br>
           完全にローカルな「アプリ」として利用するには、ブラウザのメニューから<b>「インストール（PWA）」</b>を行うことを強くお勧めします。
         </p>
-        <div style="display: flex; gap: 12px;">
-          <button onclick="location.href='${window.location.origin}'" style="padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button onclick="location.href='${window.location.href.split('#')[0].split('?')[0]}'" style="padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;">
             アプリを起動する
           </button>
-          <button onclick="window.close()" style="padding: 12px 24px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+          <button onclick="if(!window.close()){ alert('ブラウザのセキュリティ制限により閉じられませんでした。タブを直接閉じてください。'); }" style="padding: 12px 24px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
             閉じる
           </button>
         </div>
