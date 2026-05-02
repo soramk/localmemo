@@ -1134,14 +1134,21 @@ export default function App() {
 
   const handleExportStandalone = async () => {
     try {
-      // Fetch index.css content
+      // Get all styles currently loaded in the document
       let cssText = '';
       try {
-        const cssRes = await fetch('/src/index.css');
-        cssText = await cssRes.text();
+        cssText = Array.from(document.styleSheets)
+          .map(sheet => {
+            try {
+              // Only include internal or same-origin styles
+              return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+            } catch (e) {
+              return ''; 
+            }
+          })
+          .join('\n');
       } catch (e) {
-        // Fallback or skip if fails in dev
-        console.warn('Could not fetch index.css for export');
+        console.warn('Could not extract styles from document');
       }
 
       const standaloneHtml = `<!DOCTYPE html>
@@ -1154,25 +1161,30 @@ export default function App() {
       ${cssText}
       #root { height: 100vh; overflow: hidden; }
       .portable-overlay {
-        position: fixed; inset: 0; background: var(--bg-color);
+        position: fixed; inset: 0; background: #0f172a; color: white;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        z-index: 9999; text-align: center; padding: 20px;
+        z-index: 9999; text-align: center; padding: 20px; font-family: sans-serif;
       }
     </style>
 </head>
 <body>
     <div id="root">
       <div class="portable-overlay">
-        <h2 style="color: var(--primary)">WebMemoNote Portable</h2>
-        <p style="color: var(--text-main); max-width: 500px; margin: 20px 0;">
-          このポータブル版は、オフラインや共有での簡易利用を目的としています。<br>
-          完全な機能（自動保存や全てのアイコン表示）を利用するには、公式サイトにアクセスしてブラウザから「インストール（PWA）」することをお勧めします。
+        <h2 style="color: #4f46e5; margin-bottom: 20px;">WebMemoNote Portable</h2>
+        <p style="max-width: 500px; margin-bottom: 30px; line-height: 1.6; opacity: 0.9;">
+          このHTMLファイルは、WebMemoNoteへのクイックアクセス用ポータルです。<br>
+          完全にローカルな「アプリ」として利用するには、ブラウザのメニューから<b>「インストール（PWA）」</b>を行うことを強くお勧めします。
         </p>
-        <button onclick="location.href='${window.location.origin}'" style="padding: 12px 24px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
-          公式サイトへ戻る
-        </button>
-        <p style="margin-top: 40px; font-size: 0.8rem; color: var(--text-muted);">
-          ※このHTMLファイルはシステムそのもののコピーではなく、アクセスのためのポータブルポータルです。
+        <div style="display: flex; gap: 12px;">
+          <button onclick="location.href='${window.location.origin}'" style="padding: 12px 24px; background: #4f46e5; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+            アプリを起動する
+          </button>
+          <button onclick="window.close()" style="padding: 12px 24px; background: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+            閉じる
+          </button>
+        </div>
+        <p style="margin-top: 40px; font-size: 0.75rem; opacity: 0.5;">
+          ※PWAをインストールすると、インターネットがない環境でもデスクトップから直接起動できるようになります。
         </p>
       </div>
     </div>
