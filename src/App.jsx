@@ -295,11 +295,15 @@ export default function App() {
   // Settings State
   const [editorSettings, setEditorSettings] = useState({
     fontFamily: 'inherit',
-    fontSize: '1rem',
-    letterSpacing: 'normal',
+    fontSize: '16',
+    letterSpacing: '0',
+    lineHeight: '1.8',
+    editorPadding: '32',
+    maxWidth: '900',
     fontColor: 'var(--text-main)',
-    tabSize: '2', // '2', '4', 'tab'
-    theme: 'system' // 'light', 'dark', 'system'
+    tabSize: 'tab', // '2', '4', 'tab'
+    theme: 'system', // 'light', 'dark', 'system'
+    wordWrap: true
   });
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
@@ -900,9 +904,9 @@ export default function App() {
         <div className="modal-overlay">
           <div className="modal-content">
             <h3 className="modal-title">エディタ設定</h3>
-            <div className="modal-input-group">
-              <div>
-                <label className="modal-label">フォントファミリー</label>
+            <div className="modal-input-grid">
+              <div className="settings-section">
+                <label className="modal-label">基本フォント</label>
                 <select 
                   className="modal-input" 
                   value={tempSettings.fontFamily} 
@@ -912,75 +916,123 @@ export default function App() {
                   <option value="'Inter', 'Roboto', 'Helvetica Neue', sans-serif">モダン・ゴシック (Inter/Roboto)</option>
                   <option value="'Yu Gothic', 'Meiryo', sans-serif">和風ゴシック (游ゴシック/メイリオ)</option>
                   <option value="'Yu Mincho', 'MS Mincho', serif">明朝体 (游明朝/MS明朝)</option>
+                  <option value="'BIZ UDPGothic', sans-serif">BIZ UDPゴシック</option>
+                  <option value="'BIZ UDPMincho', serif">BIZ UDP明朝</option>
                   <option value="monospace">等幅 (Monospace)</option>
-                  <option value="'Courier New', Courier, monospace">等幅セリフ (Courier New)</option>
-                  <option value="'Consolas', 'Monaco', monospace">プログラミング (Consolas/Monaco)</option>
+                  <option value="'Consolas', 'Monaco', 'Courier New', monospace">プログラミング用 (Consolas/Monaco)</option>
+                  <option value="'Fira Code', 'Cascadia Code', monospace">リガチャ対応 (Fira/Cascadia)</option>
                 </select>
               </div>
               
-              <div>
-                <label className="modal-label">フォントサイズ</label>
-                <select 
-                  className="modal-input" 
-                  value={tempSettings.fontSize} 
-                  onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
-                >
-                  <option value="0.875rem">小 (14px)</option>
-                  <option value="1rem">標準 (16px)</option>
-                  <option value="1.125rem">大 (18px)</option>
-                  <option value="1.25rem">特大 (20px)</option>
-                </select>
+              <div className="settings-row-triple">
+                <div>
+                  <label className="modal-label">サイズ (px)</label>
+                  <input 
+                    type="number" 
+                    className="modal-input" 
+                    value={tempSettings.fontSize} 
+                    onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="modal-label">文字間 (px)</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    className="modal-input" 
+                    value={tempSettings.letterSpacing} 
+                    onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="modal-label">行間</label>
+                  <input 
+                    type="number" 
+                    step="0.1"
+                    className="modal-input" 
+                    value={tempSettings.lineHeight} 
+                    onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="modal-label">文字間隔 (Letter Spacing)</label>
-                <select 
-                  className="modal-input" 
-                  value={tempSettings.letterSpacing} 
-                  onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
-                >
-                  <option value="normal">標準</option>
-                  <option value="0.5px">少し広い (0.5px)</option>
-                  <option value="1px">広い (1px)</option>
-                  <option value="2px">とても広い (2px)</option>
-                </select>
+              <div className="settings-row-double">
+                <div>
+                  <label className="modal-label">余白 (px)</label>
+                  <input 
+                    type="number" 
+                    className="modal-input" 
+                    value={tempSettings.editorPadding} 
+                    onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="modal-label">最大幅 (px)</label>
+                  <input 
+                    type="number" 
+                    className="modal-input" 
+                    value={tempSettings.maxWidth} 
+                    onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="modal-label">フォント色</label>
-                <input 
-                  type="color" 
-                  className="modal-input" 
-                  style={{ padding: '4px', height: '40px', cursor: 'pointer' }}
-                  value={tempSettings.fontColor} 
-                  onChange={e => setTempSettings({...tempSettings, fontColor: e.target.value})}
-                />
+              <div className="settings-row-double">
+                <div>
+                  <label className="modal-label">フォント色</label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input 
+                      type="color" 
+                      className="modal-input" 
+                      style={{ padding: '2px', height: '38px', width: '60px', cursor: 'pointer' }}
+                      value={tempSettings.fontColor.startsWith('var') ? (tempSettings.theme === 'dark' ? '#F9FAFB' : '#111827') : tempSettings.fontColor} 
+                      onChange={e => setTempSettings({...tempSettings, fontColor: e.target.value})}
+                    />
+                    <button 
+                      className="btn-secondary" 
+                      style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                      onClick={() => setTempSettings({...tempSettings, fontColor: 'var(--text-main)'})}
+                    >リセット</button>
+                  </div>
+                </div>
+                <div>
+                  <label className="modal-label">テーマ</label>
+                  <select 
+                    className="modal-input" 
+                    value={tempSettings.theme} 
+                    onChange={e => setTempSettings({...tempSettings, theme: e.target.value})}
+                  >
+                    <option value="system">システム設定</option>
+                    <option value="light">ライト</option>
+                    <option value="dark">ダーク</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="modal-label">テーマ</label>
-                <select 
-                  className="modal-input" 
-                  value={tempSettings.theme} 
-                  onChange={e => setTempSettings({...tempSettings, theme: e.target.value})}
-                >
-                  <option value="system">OSのシステム設定に合わせる</option>
-                  <option value="light">ライトモード</option>
-                  <option value="dark">ダークモード</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="modal-label">Tabキーの挙動</label>
-                <select 
-                  className="modal-input" 
-                  value={tempSettings.tabSize} 
-                  onChange={e => setTempSettings({...tempSettings, tabSize: e.target.value})}
-                >
-                  <option value="2">スペース2つ</option>
-                  <option value="4">スペース4つ</option>
-                  <option value="tab">Tab文字 (\t)</option>
-                </select>
+              <div className="settings-row-double">
+                <div>
+                  <label className="modal-label">Tabキー</label>
+                  <select 
+                    className="modal-input" 
+                    value={tempSettings.tabSize} 
+                    onChange={e => setTempSettings({...tempSettings, tabSize: e.target.value})}
+                  >
+                    <option value="tab">Tab文字 (\t)</option>
+                    <option value="2">スペース2つ</option>
+                    <option value="4">スペース4つ</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '8px' }}>
+                  <label className="checkbox-container">
+                    <input 
+                      type="checkbox" 
+                      checked={tempSettings.wordWrap} 
+                      onChange={e => setTempSettings({...tempSettings, wordWrap: e.target.checked})}
+                    />
+                    <span className="checkmark"></span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>単語の折り返し</span>
+                  </label>
+                </div>
               </div>
             </div>
             <div className="modal-actions">
@@ -1210,9 +1262,15 @@ export default function App() {
                   className="editor-textarea"
                   style={{
                     fontFamily: editorSettings.fontFamily,
-                    fontSize: editorSettings.fontSize,
-                    letterSpacing: editorSettings.letterSpacing,
-                    color: editorSettings.fontColor
+                    fontSize: `${editorSettings.fontSize}px`,
+                    letterSpacing: `${editorSettings.letterSpacing}px`,
+                    lineHeight: editorSettings.lineHeight,
+                    padding: `${editorSettings.editorPadding}px`,
+                    maxWidth: `${editorSettings.maxWidth}px`,
+                    margin: '0 auto',
+                    color: editorSettings.fontColor,
+                    whiteSpace: editorSettings.wordWrap ? 'pre-wrap' : 'pre',
+                    overflowX: editorSettings.wordWrap ? 'hidden' : 'auto'
                   }}
                   value={editorContent}
                   onChange={handleEditorChange}
@@ -1250,10 +1308,15 @@ export default function App() {
                   className="markdown-preview" 
                   style={{
                     fontFamily: editorSettings.fontFamily,
-                    fontSize: editorSettings.fontSize,
-                    letterSpacing: editorSettings.letterSpacing,
+                    fontSize: `${editorSettings.fontSize}px`,
+                    letterSpacing: `${editorSettings.letterSpacing}px`,
+                    lineHeight: editorSettings.lineHeight,
+                    padding: `${editorSettings.editorPadding}px`,
+                    maxWidth: `${editorSettings.maxWidth}px`,
+                    margin: '0 auto',
                     color: editorSettings.fontColor,
-                    padding: mediaData?.type === 'html' ? 0 : undefined,
+                    paddingTop: mediaData?.type === 'html' ? 0 : undefined,
+                    paddingBottom: mediaData?.type === 'html' ? 0 : undefined,
                     overflow: mediaData?.type === 'html' ? 'hidden' : undefined
                   }}
                 >
