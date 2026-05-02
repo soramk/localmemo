@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe } from 'lucide-react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe, ArrowUp, Move } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './index.css';
@@ -309,6 +309,8 @@ export default function App() {
   const [editorSettings, setEditorSettings] = useState(DEFAULT_SETTINGS);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [moveTargetItem, setMoveTargetItem] = useState(null);
   const [tempSettings, setTempSettings] = useState(DEFAULT_SETTINGS);
 
   // Modal states
@@ -402,6 +404,23 @@ export default function App() {
     const lowerQuery = searchQuery.toLowerCase();
     return flattenedFiles.filter(f => f.name.toLowerCase().includes(lowerQuery));
   }, [searchQuery, flattenedFiles]);
+
+  const allDirectories = useMemo(() => {
+    const dirs = [];
+    if (directoryHandle) {
+      dirs.push({ name: 'ルート', kind: 'directory', handle: directoryHandle, path: directoryHandle.name, isRoot: true });
+    }
+    const recurse = (items) => {
+      items.forEach(item => {
+        if (item.kind === 'directory') {
+          dirs.push(item);
+          if (item.children) recurse(item.children);
+        }
+      });
+    };
+    recurse(files);
+    return dirs;
+  }, [files, directoryHandle]);
 
   const handleResumeFolder = async () => {
     if (!savedHandle) return;
@@ -809,6 +828,49 @@ export default function App() {
     }
   };
 
+  const handleMoveToParent = async (item) => {
+    if (!item || !item.parentHandle || item.isRoot) return;
+    
+    // Find parent of parent
+    // This is tricky because we don't have parent links in the handles easily.
+    // We can use the path to find the target in our 'allDirectories'
+    const pathParts = item.path.split('/');
+    if (pathParts.length <= 2) return; // Already at root or similar
+    
+    const grandParentPath = pathParts.slice(0, -2).join('/');
+    const grandParent = allDirectories.find(d => d.path === grandParentPath);
+    
+    if (grandParent) {
+      handleDropOnItem(item, grandParent);
+    }
+  };
+
+  const executeMove = async (sourceItem, targetDirItem) => {
+    try {
+      // Logic from handleDropOnItem for directory move
+      const sourceFile = await sourceItem.handle.getFile();
+      const sourceBuffer = await sourceFile.arrayBuffer();
+      
+      const newSourceHandle = await targetDirItem.handle.getFileHandle(sourceItem.name, { create: true });
+      const sourceWritable = await newSourceHandle.createWritable();
+      await sourceWritable.write(sourceBuffer);
+      await sourceWritable.close();
+
+      await sourceItem.parentHandle.removeEntry(sourceItem.name);
+
+      const tree = await readDir(directoryHandle, directoryHandle.name, 1);
+      setFiles(tree);
+
+      if (selectedFile && selectedFile.path === sourceItem.path) {
+        setSelectedFile(null);
+        setEditorContent('');
+      }
+      setIsMoveModalOpen(false);
+    } catch (err) {
+      setError(`移動に失敗しました: ${err.message}`);
+    }
+  };
+
   const handleEditorDrop = async (e) => {
     e.preventDefault();
     if (!selectedFile) return;
@@ -1176,6 +1238,20 @@ export default function App() {
               handleContextMenu(e, { kind: 'directory', handle: directoryHandle, name: 'ルート', isRoot: true });
             }
           }}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (draggedItem && activeTabName) {
+              let targetDir = null;
+              if (activeTabName === 'メイン') {
+                targetDir = { handle: directoryHandle, kind: 'directory', path: directoryHandle.name };
+              } else {
+                const tabDir = files.find(f => f.kind === 'directory' && f.name === activeTabName);
+                if (tabDir) targetDir = tabDir;
+              }
+              if (targetDir) handleDropOnItem(draggedItem, targetDir);
+            }
+          }}
         >
           {files.length === 0 && !directoryHandle && (
             <div className="empty-state">
@@ -1238,6 +1314,27 @@ export default function App() {
                 onClick={() => setActiveTabName(tab.name)}
                 className={`tab ${activeTabName === tab.name ? 'active' : ''}`}
                 style={tab.isSpecial ? { color: '#FBBF24', fontWeight: 'bold' } : {}}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('drag-over');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('drag-over');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('drag-over');
+                  if (draggedItem) {
+                    let targetDir = null;
+                    if (tab.name === 'メイン') {
+                      targetDir = { handle: directoryHandle, kind: 'directory', path: directoryHandle.name };
+                    } else if (!tab.isSpecial) {
+                      const rootDir = files.find(f => f.kind === 'directory' && f.name === tab.name);
+                      if (rootDir) targetDir = rootDir;
+                    }
+                    if (targetDir) handleDropOnItem(draggedItem, targetDir);
+                  }
+                }}
               >
                 {tab.name}
               </button>
@@ -1496,6 +1593,30 @@ export default function App() {
         </div>
       )}
 
+      {/* Move File Modal */}
+      {isMoveModalOpen && moveTargetItem && (
+        <div className="modal-overlay" onClick={() => setIsMoveModalOpen(false)}>
+          <div className="modal-content move-modal" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">「{moveTargetItem.name}」の移動先を選択</h3>
+            <div className="move-folder-list">
+              {allDirectories.map(dir => (
+                <div 
+                  key={dir.path} 
+                  className="move-folder-item" 
+                  onClick={() => executeMove(moveTargetItem, dir)}
+                >
+                  <Folder size={16} className="icon-folder" />
+                  <span>{dir.isRoot ? 'ルート' : dir.path.split('/').slice(1).join(' / ')}</span>
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={() => setIsMoveModalOpen(false)}>キャンセル</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Context Menu */}
       {contextMenu.isOpen && contextMenu.targetItem && (
         <div 
@@ -1520,13 +1641,29 @@ export default function App() {
               <div className="context-menu-divider"></div>
             </>
           )}
-          {contextMenu.targetItem.kind === 'file' && (
             <div className="context-menu-item" onClick={() => {
               handleRenameFromMenu();
               closeContextMenu();
             }}>
               <Edit3 size={14} /> 名前を変更
             </div>
+            {!contextMenu.targetItem.isRoot && (
+              <>
+                <div className="context-menu-item" onClick={() => {
+                  handleMoveToParent(contextMenu.targetItem);
+                  closeContextMenu();
+                }}>
+                  <ArrowUp size={14} /> 一階層上に移動
+                </div>
+                <div className="context-menu-item" onClick={() => {
+                  setMoveTargetItem(contextMenu.targetItem);
+                  setIsMoveModalOpen(true);
+                  closeContextMenu();
+                }}>
+                  <Move size={14} /> 指定フォルダへ移動
+                </div>
+              </>
+            )}
           )}
           {!contextMenu.targetItem.isRoot && (
             <div className="context-menu-item danger" onClick={() => {

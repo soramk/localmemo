@@ -929,3 +929,42 @@ body {
   color: var(--text-main);
 }
 
+/* Move Modal */
+.move-modal {
+  width: 450px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.move-folder-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.move-folder-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid var(--border-color);
+}
+.move-folder-item:last-child {
+  border-bottom: none;
+}
+.move-folder-item:hover {
+  background-color: var(--hover-bg);
+  color: var(--active-text);
+}
+
+/* Tab Drag Over */
+.tab.drag-over {
+  background-color: var(--active-bg) !important;
+  border-bottom-color: var(--primary) !important;
+  transform: translateY(-2px);
+}
+
