@@ -1182,14 +1182,17 @@ export default function App() {
                       value={tempSettings.fontSize} 
                       onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
                     />
-                    <select 
-                      className="preset-select" 
-                      value={tempSettings.fontSize} 
-                      onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
-                    >
-                      <option value="">▼</option>
-                      {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.fontSize) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                    </select>
+                    <div className="preset-select-wrapper">
+                      <ChevronDown size={14} className="preset-icon" />
+                      <select 
+                        className="preset-select" 
+                        value={tempSettings.fontSize} 
+                        onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
+                      >
+                        <option value="" disabled></option>
+                        {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.fontSize) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -1203,14 +1206,17 @@ export default function App() {
                       value={tempSettings.letterSpacing} 
                       onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
                     />
-                    <select 
-                      className="preset-select" 
-                      value={tempSettings.letterSpacing} 
-                      onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
-                    >
-                      <option value="">▼</option>
-                      {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.letterSpacing) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                    </select>
+                    <div className="preset-select-wrapper">
+                      <ChevronDown size={14} className="preset-icon" />
+                      <select 
+                        className="preset-select" 
+                        value={tempSettings.letterSpacing} 
+                        onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
+                      >
+                        <option value="" disabled></option>
+                        {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.letterSpacing) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -1224,14 +1230,17 @@ export default function App() {
                       value={tempSettings.lineHeight} 
                       onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
                     />
-                    <select 
-                      className="preset-select" 
-                      value={tempSettings.lineHeight} 
-                      onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
-                    >
-                      <option value="">▼</option>
-                      {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.lineHeight) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                    </select>
+                    <div className="preset-select-wrapper">
+                      <ChevronDown size={14} className="preset-icon" />
+                      <select 
+                        className="preset-select" 
+                        value={tempSettings.lineHeight} 
+                        onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
+                      >
+                        <option value="" disabled></option>
+                        {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.lineHeight) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1247,14 +1256,17 @@ export default function App() {
                       value={tempSettings.editorPadding} 
                       onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
                     />
-                    <select 
-                      className="preset-select" 
-                      value={tempSettings.editorPadding} 
-                      onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
-                    >
-                      <option value="">▼</option>
-                      {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.editorPadding) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                    </select>
+                    <div className="preset-select-wrapper">
+                      <ChevronDown size={14} className="preset-icon" />
+                      <select 
+                        className="preset-select" 
+                        value={tempSettings.editorPadding} 
+                        onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
+                      >
+                        <option value="" disabled></option>
+                        {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.editorPadding) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -1267,14 +1279,17 @@ export default function App() {
                       value={tempSettings.maxWidth} 
                       onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
                     />
-                    <select 
-                      className="preset-select" 
-                      value={tempSettings.maxWidth} 
-                      onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
-                    >
-                      <option value="">▼</option>
-                      {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.maxWidth) ? `${v} (${tt('initialValue')})` : v}</option>)}
-                    </select>
+                    <div className="preset-select-wrapper">
+                      <ChevronDown size={14} className="preset-icon" />
+                      <select 
+                        className="preset-select" 
+                        value={tempSettings.maxWidth} 
+                        onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
+                      >
+                        <option value="" disabled></option>
+                        {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.maxWidth) ? `${v} (${tt('initialValue')})` : v}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -903,24 +903,36 @@ body {
 .hybrid-input .modal-input {
   padding-right: 32px;
 }
-.preset-select {
+.preset-select-wrapper {
   position: absolute;
   right: 1px;
-  width: 28px;
+  width: 32px;
   height: calc(100% - 2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--tab-bg);
-  border: none;
   border-left: 1px solid var(--border-color);
   border-radius: 0 5px 5px 0;
   color: var(--text-muted);
-  cursor: pointer;
-  font-size: 0.75rem;
-  appearance: none;
-  text-align: center;
-  padding: 0;
-  outline: none;
+  pointer-events: none;
+  z-index: 1;
 }
-.preset-select:hover {
+.preset-select-wrapper .preset-icon {
+  transition: transform 0.2s;
+}
+.preset-select {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 32px;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+  appearance: none;
+}
+.hybrid-input:hover .preset-select-wrapper {
   background-color: var(--hover-bg);
   color: var(--text-main);
 }
