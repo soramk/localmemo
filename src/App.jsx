@@ -745,6 +745,11 @@ export default function App() {
     
     try {
       if (targetItem.kind === 'directory') {
+        // 同じフォルダにドロップした場合は何もしない
+        if (sourceItem.parentHandle && await sourceItem.parentHandle.isSameEntry(targetItem.handle)) {
+          return;
+        }
+
         // Move sourceItem INTO targetItem
         const targetDirHandle = targetItem.handle;
         
