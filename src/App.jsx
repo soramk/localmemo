@@ -338,7 +338,7 @@ export default function App() {
       try {
         const savedSettings = await getVal('editorSettings');
         if (savedSettings) {
-          setEditorSettings(savedSettings);
+          setEditorSettings({ ...DEFAULT_SETTINGS, ...savedSettings });
         }
       } catch (e) { console.log(e); }
 
@@ -908,7 +908,7 @@ export default function App() {
             <h3 className="modal-title">エディタ設定</h3>
             <div className="modal-input-grid">
               <div className="settings-section">
-                <label className="modal-label">基本フォント (Default: System)</label>
+                <label className="modal-label">基本フォント</label>
                 <select 
                   className="modal-input" 
                   value={tempSettings.fontFamily} 
@@ -928,11 +928,12 @@ export default function App() {
               
               <div className="settings-row-triple">
                 <div>
-                  <label className="modal-label">サイズ ({DEFAULT_SETTINGS.fontSize}px)</label>
+                  <label className="modal-label">サイズ (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
                       className="modal-input" 
+                      placeholder={DEFAULT_SETTINGS.fontSize}
                       value={tempSettings.fontSize} 
                       onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
                     />
@@ -942,17 +943,18 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v}</option>)}
+                      {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.fontSize) ? `${v} (初期値)` : v}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">文字間 ({DEFAULT_SETTINGS.letterSpacing}px)</label>
+                  <label className="modal-label">文字間 (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
                       step="0.1"
                       className="modal-input" 
+                      placeholder={DEFAULT_SETTINGS.letterSpacing}
                       value={tempSettings.letterSpacing} 
                       onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
                     />
@@ -962,17 +964,18 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v}</option>)}
+                      {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.letterSpacing) ? `${v} (初期値)` : v}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">行間 ({DEFAULT_SETTINGS.lineHeight})</label>
+                  <label className="modal-label">行間</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
                       step="0.1"
                       className="modal-input" 
+                      placeholder={DEFAULT_SETTINGS.lineHeight}
                       value={tempSettings.lineHeight} 
                       onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
                     />
@@ -982,7 +985,7 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v}</option>)}
+                      {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.lineHeight) ? `${v} (初期値)` : v}</option>)}
                     </select>
                   </div>
                 </div>
@@ -990,11 +993,12 @@ export default function App() {
 
               <div className="settings-row-double">
                 <div>
-                  <label className="modal-label">余白 ({DEFAULT_SETTINGS.editorPadding}px)</label>
+                  <label className="modal-label">余白 (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
                       className="modal-input" 
+                      placeholder={DEFAULT_SETTINGS.editorPadding}
                       value={tempSettings.editorPadding} 
                       onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
                     />
@@ -1004,16 +1008,17 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v}</option>)}
+                      {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.editorPadding) ? `${v} (初期値)` : v}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">最大幅 ({DEFAULT_SETTINGS.maxWidth}px)</label>
+                  <label className="modal-label">最大幅 (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
                       className="modal-input" 
+                      placeholder={DEFAULT_SETTINGS.maxWidth}
                       value={tempSettings.maxWidth} 
                       onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
                     />
@@ -1023,7 +1028,7 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v}</option>)}
+                      {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.maxWidth) ? `${v} (初期値)` : v}</option>)}
                     </select>
                   </div>
                 </div>
@@ -1048,13 +1053,13 @@ export default function App() {
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">テーマ (Default: System)</label>
+                  <label className="modal-label">テーマ</label>
                   <select 
                     className="modal-input" 
                     value={tempSettings.theme} 
                     onChange={e => setTempSettings({...tempSettings, theme: e.target.value})}
                   >
-                    <option value="system">システム設定</option>
+                    <option value="system">システム設定 (初期値)</option>
                     <option value="light">ライト</option>
                     <option value="dark">ダーク</option>
                   </select>
@@ -1069,7 +1074,7 @@ export default function App() {
                     value={tempSettings.tabSize} 
                     onChange={e => setTempSettings({...tempSettings, tabSize: e.target.value})}
                   >
-                    <option value="tab">Tab文字 (\t)</option>
+                    <option value="tab">Tab文字 (\t) (初期値)</option>
                     <option value="2">スペース2つ</option>
                     <option value="4">スペース4つ</option>
                   </select>
@@ -1078,11 +1083,11 @@ export default function App() {
                   <label className="checkbox-container">
                     <input 
                       type="checkbox" 
-                      checked={tempSettings.wordWrap} 
+                      checked={!!tempSettings.wordWrap} 
                       onChange={e => setTempSettings({...tempSettings, wordWrap: e.target.checked})}
                     />
                     <span className="checkmark"></span>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>単語の折り返し (Default: On)</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>単語の折り返し</span>
                   </label>
                 </div>
               </div>
