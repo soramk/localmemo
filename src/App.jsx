@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3 } from 'lucide-react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './index.css';
@@ -302,6 +302,7 @@ export default function App() {
     theme: 'system' // 'light', 'dark', 'system'
   });
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [tempSettings, setTempSettings] = useState(editorSettings);
 
   // Modal states
@@ -998,7 +999,15 @@ export default function App() {
       <div className="sidebar">
         <div className="sidebar-header">
           <div className="header-dot"></div>
-          WebMemoNote
+          <span style={{ flex: 1 }}>WebMemoNote</span>
+          <div 
+            className="security-badge" 
+            onClick={() => setIsPrivacyModalOpen(true)}
+            title="セキュリティとプライバシーについて"
+          >
+            <ShieldCheck size={14} />
+            <span>ローカル専用</span>
+          </div>
         </div>
         
         {directoryHandle && (
@@ -1288,10 +1297,26 @@ export default function App() {
               <div className="welcome-card">
                 <Info size={48} color="#4F46E5" style={{ marginBottom: '16px' }} />
                 <h2 className="welcome-title">ローカルファイル直接編集モード</h2>
+                <div className="welcome-security-info">
+                  <div className="security-item">
+                    <ShieldCheck size={18} className="security-icon" />
+                    <span>データはあなたのPC内のみで完結</span>
+                  </div>
+                  <div className="security-item">
+                    <Globe size={18} className="security-icon" />
+                    <span>外部サーバーへの送信なし</span>
+                  </div>
+                </div>
+
                 <p className="welcome-desc">
                   「PCのフォルダを開く」ボタンから、普段メモを保存しているフォルダを選択してください。<br/>
                   テキストファイル（.txt, .md）を直接読み込み、編集・自動保存が可能です。
                 </p>
+
+                <div className="welcome-privacy-note" onClick={() => setIsPrivacyModalOpen(true)}>
+                  <Lock size={12} /> なぜ安全なのですか？
+                </div>
+
                 {savedHandle && (
                   <button onClick={handleResumeFolder} className="btn-large">
                     <RefreshCw size={18} />
@@ -1305,6 +1330,46 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* Privacy & Security Modal */}
+      {isPrivacyModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsPrivacyModalOpen(false)}>
+          <div className="modal-content privacy-modal" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div className="security-icon-large">
+                <ShieldCheck size={32} />
+              </div>
+              <h3 className="modal-title" style={{ margin: 0 }}>プライバシーと安全性</h3>
+            </div>
+            
+            <div className="privacy-content">
+              <section>
+                <h4><Lock size={16} /> 100% ローカル完結</h4>
+                <p>このアプリは「File System Access API」を使用して、あなたのPC上のファイルを直接読み書きします。データが外部のサーバーに送信されたり、クラウドに保存されることはありません。</p>
+              </section>
+
+              <section>
+                <h4><Globe size={16} /> インターネット通信なし</h4>
+                <p>メモの内容や画像データがインターネットへ送信される仕組みは一切ありません。完全にオフラインでも動作します。</p>
+              </section>
+
+              <section>
+                <h4><Monitor size={16} /> 自分で確認する方法</h4>
+                <p>ブラウザの開発者ツール（F12キー）の「ネットワーク」タブを開いたまま操作してみてください。外部への通信が発生していないことが確認できます。</p>
+              </section>
+
+              <div className="privacy-footer">
+                <ShieldCheck size={14} />
+                <span>WebMemoNote は、プライバシー第一の設計です。</span>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn-primary-solid" onClick={() => setIsPrivacyModalOpen(false)}>閉じる</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Context Menu */}
       {contextMenu.isOpen && contextMenu.targetItem && (
