@@ -18,6 +18,19 @@ const ALLOWED_EXTENSIONS = [
   '.mp4', '.webm', '.mp3', '.wav'
 ];
 const ALLOWED_EXACT_NAMES = ['.gitignore', '.env', '.prettierrc', '.eslintrc'];
+const DEFAULT_SETTINGS = {
+  fontFamily: 'inherit',
+  fontSize: '16',
+  letterSpacing: '0',
+  lineHeight: '1.8',
+  editorPadding: '32',
+  maxWidth: '900',
+  fontColor: 'var(--text-main)',
+  tabSize: 'tab',
+  theme: 'system',
+  wordWrap: true
+};
+
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -293,21 +306,10 @@ export default function App() {
   };
 
   // Settings State
-  const [editorSettings, setEditorSettings] = useState({
-    fontFamily: 'inherit',
-    fontSize: '16',
-    letterSpacing: '0',
-    lineHeight: '1.8',
-    editorPadding: '32',
-    maxWidth: '900',
-    fontColor: 'var(--text-main)',
-    tabSize: 'tab', // '2', '4', 'tab'
-    theme: 'system', // 'light', 'dark', 'system'
-    wordWrap: true
-  });
+  const [editorSettings, setEditorSettings] = useState(DEFAULT_SETTINGS);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
-  const [tempSettings, setTempSettings] = useState(editorSettings);
+  const [tempSettings, setTempSettings] = useState(DEFAULT_SETTINGS);
 
   // Modal states
   const [isNewFileModalOpen, setIsNewFileModalOpen] = useState(false);
@@ -906,7 +908,7 @@ export default function App() {
             <h3 className="modal-title">エディタ設定</h3>
             <div className="modal-input-grid">
               <div className="settings-section">
-                <label className="modal-label">基本フォント</label>
+                <label className="modal-label">基本フォント (Default: System)</label>
                 <select 
                   className="modal-input" 
                   value={tempSettings.fontFamily} 
@@ -926,54 +928,104 @@ export default function App() {
               
               <div className="settings-row-triple">
                 <div>
-                  <label className="modal-label">サイズ (px)</label>
-                  <input 
-                    type="number" 
-                    className="modal-input" 
-                    value={tempSettings.fontSize} 
-                    onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
-                  />
+                  <label className="modal-label">サイズ ({DEFAULT_SETTINGS.fontSize}px)</label>
+                  <div className="hybrid-input">
+                    <input 
+                      type="number" 
+                      className="modal-input" 
+                      value={tempSettings.fontSize} 
+                      onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
+                    />
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.fontSize} 
+                      onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
+                    >
+                      <option value="">▼</option>
+                      {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="modal-label">文字間 (px)</label>
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    className="modal-input" 
-                    value={tempSettings.letterSpacing} 
-                    onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
-                  />
+                  <label className="modal-label">文字間 ({DEFAULT_SETTINGS.letterSpacing}px)</label>
+                  <div className="hybrid-input">
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      className="modal-input" 
+                      value={tempSettings.letterSpacing} 
+                      onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
+                    />
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.letterSpacing} 
+                      onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
+                    >
+                      <option value="">▼</option>
+                      {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="modal-label">行間</label>
-                  <input 
-                    type="number" 
-                    step="0.1"
-                    className="modal-input" 
-                    value={tempSettings.lineHeight} 
-                    onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
-                  />
+                  <label className="modal-label">行間 ({DEFAULT_SETTINGS.lineHeight})</label>
+                  <div className="hybrid-input">
+                    <input 
+                      type="number" 
+                      step="0.1"
+                      className="modal-input" 
+                      value={tempSettings.lineHeight} 
+                      onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
+                    />
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.lineHeight} 
+                      onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
+                    >
+                      <option value="">▼</option>
+                      {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
 
               <div className="settings-row-double">
                 <div>
-                  <label className="modal-label">余白 (px)</label>
-                  <input 
-                    type="number" 
-                    className="modal-input" 
-                    value={tempSettings.editorPadding} 
-                    onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
-                  />
+                  <label className="modal-label">余白 ({DEFAULT_SETTINGS.editorPadding}px)</label>
+                  <div className="hybrid-input">
+                    <input 
+                      type="number" 
+                      className="modal-input" 
+                      value={tempSettings.editorPadding} 
+                      onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
+                    />
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.editorPadding} 
+                      onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
+                    >
+                      <option value="">▼</option>
+                      {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="modal-label">最大幅 (px)</label>
-                  <input 
-                    type="number" 
-                    className="modal-input" 
-                    value={tempSettings.maxWidth} 
-                    onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
-                  />
+                  <label className="modal-label">最大幅 ({DEFAULT_SETTINGS.maxWidth}px)</label>
+                  <div className="hybrid-input">
+                    <input 
+                      type="number" 
+                      className="modal-input" 
+                      value={tempSettings.maxWidth} 
+                      onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
+                    />
+                    <select 
+                      className="preset-select" 
+                      value={tempSettings.maxWidth} 
+                      onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
+                    >
+                      <option value="">▼</option>
+                      {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -991,12 +1043,12 @@ export default function App() {
                     <button 
                       className="btn-secondary" 
                       style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                      onClick={() => setTempSettings({...tempSettings, fontColor: 'var(--text-main)'})}
+                      onClick={() => setTempSettings({...tempSettings, fontColor: DEFAULT_SETTINGS.fontColor})}
                     >リセット</button>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">テーマ</label>
+                  <label className="modal-label">テーマ (Default: System)</label>
                   <select 
                     className="modal-input" 
                     value={tempSettings.theme} 
@@ -1030,7 +1082,7 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, wordWrap: e.target.checked})}
                     />
                     <span className="checkmark"></span>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>単語の折り返し</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>単語の折り返し (Default: On)</span>
                   </label>
                 </div>
               </div>
