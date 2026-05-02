@@ -1641,29 +1641,32 @@ export default function App() {
               <div className="context-menu-divider"></div>
             </>
           )}
-            <div className="context-menu-item" onClick={() => {
-              handleRenameFromMenu();
-              closeContextMenu();
-            }}>
-              <Edit3 size={14} /> 名前を変更
-            </div>
-            {!contextMenu.targetItem.isRoot && (
-              <>
-                <div className="context-menu-item" onClick={() => {
-                  handleMoveToParent(contextMenu.targetItem);
-                  closeContextMenu();
-                }}>
-                  <ArrowUp size={14} /> 一階層上に移動
-                </div>
-                <div className="context-menu-item" onClick={() => {
-                  setMoveTargetItem(contextMenu.targetItem);
-                  setIsMoveModalOpen(true);
-                  closeContextMenu();
-                }}>
-                  <Move size={14} /> 指定フォルダへ移動
-                </div>
-              </>
-            )}
+          {contextMenu.targetItem.kind === 'file' && (
+            <>
+              <div className="context-menu-item" onClick={() => {
+                handleRenameFromMenu();
+                closeContextMenu();
+              }}>
+                <Edit3 size={14} /> 名前を変更
+              </div>
+              {!contextMenu.targetItem.isRoot && (
+                <>
+                  <div className="context-menu-item" onClick={() => {
+                    handleMoveToParent(contextMenu.targetItem);
+                    closeContextMenu();
+                  }}>
+                    <ArrowUp size={14} /> 一階層上に移動
+                  </div>
+                  <div className="context-menu-item" onClick={() => {
+                    setMoveTargetItem(contextMenu.targetItem);
+                    setIsMoveModalOpen(true);
+                    closeContextMenu();
+                  }}>
+                    <Move size={14} /> 指定フォルダへ移動
+                  </div>
+                </>
+              )}
+            </>
           )}
           {!contextMenu.targetItem.isRoot && (
             <div className="context-menu-item danger" onClick={() => {
