@@ -28,8 +28,175 @@ const DEFAULT_SETTINGS = {
   fontColor: 'var(--text-main)',
   tabSize: 'tab',
   theme: 'system',
-  wordWrap: true
+  wordWrap: true,
+  language: 'ja'
 };
+
+const TRANSLATIONS = {
+  ja: {
+    settingsTitle: "エディタ設定",
+    fontFamily: "基本フォント",
+    fontSize: "サイズ",
+    letterSpacing: "文字間",
+    lineHeight: "行間",
+    padding: "余白",
+    maxWidth: "最大幅",
+    fontColor: "フォント色",
+    theme: "テーマ",
+    tabKey: "Tabキー",
+    wordWrap: "単語の折り返し",
+    language: "言語",
+    save: "保存",
+    cancel: "キャンセル",
+    reset: "リセット",
+    system: "システム設定",
+    light: "ライト",
+    dark: "ダーク",
+    tabChar: "Tab文字 (\\t)",
+    space2: "スペース2つ",
+    space4: "スペース4つ",
+    secureLocal: "ローカル専用",
+    privacyHelp: "セキュリティとプライバシーについて",
+    newMemo: "新規メモ",
+    newFolder: "新規フォルダ",
+    rename: "名前を変更",
+    delete: "削除",
+    moveUp: "一階層上に移動",
+    moveToFolder: "指定フォルダへ移動",
+    moveToTab: "指定タブへ移動",
+    searchPlaceholder: "ファイル名で検索...",
+    starred: "★ お気に入り",
+    allFiles: "すべてのファイル",
+    mainTab: "メイン",
+    welcomeTitle: "ローカルファイル直接編集モード",
+    welcomeDesc: "「PCのフォルダを開く」ボタンから、普段メモを保存しているフォルダを選択してください。テキストファイル（.txt, .md）を直接読み込み、編集・自動保存が可能です。",
+    welcomeSecure1: "データはあなたのPC内のみで完結",
+    welcomeSecure2: "外部サーバーへの送信なし",
+    welcomePrivacyLink: "なぜ安全なのですか？",
+    resumeFolder: "前回のフォルダを復元",
+    openFolderBtn: "PCのフォルダを開く",
+    emptyStateFolder: "メモが保存されている\nフォルダを選択してください",
+    emptyStateNoFiles: "メモが見つかりません",
+    emptyStateNoSearch: "一致するファイルがありません",
+    loadingImage: "画像を読み込み中...",
+    default: "デフォルト",
+    initialValue: "初期値",
+    moveTitle: "の移動先を選択",
+    moveTabTitle: "をタブへ移動",
+    confirmDelete: "このファイルを削除してもよろしいですか？",
+    autoFolderPrompt: "自動フォルダ化\\n新しいフォルダの名前を入力してください:",
+    newFolderDefault: "新しいフォルダ"
+  },
+  en: {
+    settingsTitle: "Editor Settings",
+    fontFamily: "Base Font",
+    fontSize: "Size",
+    letterSpacing: "Letter Spacing",
+    lineHeight: "Line Height",
+    padding: "Padding",
+    maxWidth: "Max Width",
+    fontColor: "Font Color",
+    theme: "Theme",
+    tabKey: "Tab Key",
+    wordWrap: "Word Wrap",
+    language: "Language",
+    save: "Save",
+    cancel: "Cancel",
+    reset: "Reset",
+    system: "System Default",
+    light: "Light",
+    dark: "Dark",
+    tabChar: "Tab Character (\\t)",
+    space2: "2 Spaces",
+    space4: "4 Spaces",
+    secureLocal: "Secure Local",
+    privacyHelp: "About Security & Privacy",
+    newMemo: "New Memo",
+    newFolder: "New Folder",
+    rename: "Rename",
+    delete: "Delete",
+    moveUp: "Move Up One Level",
+    moveToFolder: "Move to Folder",
+    moveToTab: "Move to Tab",
+    searchPlaceholder: "Search files...",
+    starred: "★ Favorites",
+    allFiles: "All Files",
+    mainTab: "Main",
+    welcomeTitle: "Local File Editing Mode",
+    welcomeDesc: "Open a folder from your PC to edit and auto-save text files (.txt, .md) directly.",
+    welcomeSecure1: "Data stays on your PC",
+    welcomeSecure2: "No transmission to servers",
+    welcomePrivacyLink: "Why is it secure?",
+    resumeFolder: "Resume last folder",
+    openFolderBtn: "Open PC Folder",
+    emptyStateFolder: "Please select a folder\nto save your memos",
+    emptyStateNoFiles: "No memos found",
+    emptyStateNoSearch: "No matching files",
+    loadingImage: "Loading image...",
+    default: "Default",
+    initialValue: "Default",
+    moveTitle: " - Select destination",
+    moveTabTitle: " - Move to tab",
+    confirmDelete: "Are you sure you want to delete this file?",
+    autoFolderPrompt: "Auto Folder\\nEnter folder name:",
+    newFolderDefault: "New Folder"
+  },
+  es: {
+    settingsTitle: "Ajustes del Editor",
+    fontFamily: "Fuente Base",
+    fontSize: "Tamaño",
+    letterSpacing: "Espaciado",
+    lineHeight: "Interlineado",
+    padding: "Margen",
+    maxWidth: "Ancho Máximo",
+    fontColor: "Color de Fuente",
+    theme: "Tema",
+    tabKey: "Tecla Tab",
+    wordWrap: "Ajuste de línea",
+    language: "Idioma",
+    save: "Guardar",
+    cancel: "Cancelar",
+    reset: "Restablecer",
+    system: "Sistema",
+    light: "Claro",
+    dark: "Oscuro",
+    tabChar: "Carácter Tab (\\t)",
+    space2: "2 Espacios",
+    space4: "4 Espacios",
+    secureLocal: "Local Seguro",
+    privacyHelp: "Sobre Seguridad y Privacidad",
+    newMemo: "Nueva Nota",
+    newFolder: "Nueva Carpeta",
+    rename: "Renombrar",
+    delete: "Eliminar",
+    moveUp: "Subir un nivel",
+    moveToFolder: "Mover a carpeta",
+    moveToTab: "Mover a pestaña",
+    searchPlaceholder: "Buscar archivos...",
+    starred: "★ Favoritos",
+    allFiles: "Todos los archivos",
+    mainTab: "Principal",
+    welcomeTitle: "Modo de Edición Local",
+    welcomeDesc: "Abre una carpeta de tu PC para editar y guardar archivos (.txt, .md) directamente.",
+    welcomeSecure1: "Los datos se quedan en tu PC",
+    welcomeSecure2: "Sin envío a servidores externos",
+    welcomePrivacyLink: "¿Por qué es seguro?",
+    resumeFolder: "Reanudar última carpeta",
+    openFolderBtn: "Abrir carpeta local",
+    emptyStateFolder: "Selecciona una carpeta\npara tus notas",
+    emptyStateNoFiles: "No se encontraron notas",
+    emptyStateNoSearch: "Sin resultados",
+    loadingImage: "Cargando imagen...",
+    default: "Por defecto",
+    initialValue: "Inicial",
+    moveTitle: " - Seleccionar destino",
+    moveTabTitle: " - Mover a pestaña",
+    confirmDelete: "¿Estás seguro de eliminar este archivo?",
+    autoFolderPrompt: "Carpeta automática\\nNombre de la carpeta:",
+    newFolderDefault: "Nueva Carpeta"
+  }
+};
+
 
 
 function openDB() {
@@ -313,6 +480,16 @@ export default function App() {
   const [isMoveToTabModalOpen, setIsMoveToTabModalOpen] = useState(false);
   const [moveTargetItem, setMoveTargetItem] = useState(null);
   const [tempSettings, setTempSettings] = useState(DEFAULT_SETTINGS);
+
+  const t = useCallback((key) => {
+    const lang = editorSettings.language || 'ja';
+    return TRANSLATIONS[lang][key] || TRANSLATIONS['en'][key] || key;
+  }, [editorSettings.language]);
+
+  const tt = useCallback((key) => {
+    const lang = tempSettings.language || 'ja';
+    return TRANSLATIONS[lang][key] || TRANSLATIONS['en'][key] || key;
+  }, [tempSettings.language]);
 
   // Modal states
   const [isNewFileModalOpen, setIsNewFileModalOpen] = useState(false);
@@ -787,7 +964,7 @@ export default function App() {
 
       } else if (targetItem.kind === 'file' && sourceItem.kind === 'file') {
         // Group files into a new folder
-        const folderName = window.prompt("自動フォルダ化\n新しいフォルダの名前を入力してください:", "新しいフォルダ");
+        const folderName = window.prompt(t('autoFolderPrompt'), t('newFolderDefault'));
         if (!folderName) return;
 
         const newDirHandle = await targetItem.parentHandle.getDirectoryHandle(folderName, { create: true });
@@ -973,30 +1150,30 @@ export default function App() {
       {isSettingsModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3 className="modal-title">エディタ設定</h3>
+            <h3 className="modal-title">{tt('settingsTitle')}</h3>
             <div className="modal-input-grid">
               <div className="settings-section">
-                <label className="modal-label">基本フォント</label>
+                <label className="modal-label">{tt('fontFamily')} ({tt('default')}: System)</label>
                 <select 
                   className="modal-input" 
                   value={tempSettings.fontFamily} 
                   onChange={e => setTempSettings({...tempSettings, fontFamily: e.target.value})}
                 >
-                  <option value="inherit">デフォルト (System)</option>
-                  <option value="'Inter', 'Roboto', 'Helvetica Neue', sans-serif">モダン・ゴシック (Inter/Roboto)</option>
-                  <option value="'Yu Gothic', 'Meiryo', sans-serif">和風ゴシック (游ゴシック/メイリオ)</option>
-                  <option value="'Yu Mincho', 'MS Mincho', serif">明朝体 (游明朝/MS明朝)</option>
-                  <option value="'BIZ UDPGothic', sans-serif">BIZ UDPゴシック</option>
-                  <option value="'BIZ UDPMincho', serif">BIZ UDP明朝</option>
-                  <option value="monospace">等幅 (Monospace)</option>
-                  <option value="'Consolas', 'Monaco', 'Courier New', monospace">プログラミング用 (Consolas/Monaco)</option>
-                  <option value="'Fira Code', 'Cascadia Code', monospace">リガチャ対応 (Fira/Cascadia)</option>
+                  <option value="inherit">{tt('default')} (System)</option>
+                  <option value="'Inter', 'Roboto', 'Helvetica Neue', sans-serif">Inter/Roboto</option>
+                  <option value="'Yu Gothic', 'Meiryo', sans-serif">Yu Gothic / Meiryo</option>
+                  <option value="'Yu Mincho', 'MS Mincho', serif">Yu Mincho / MS Mincho</option>
+                  <option value="'BIZ UDPGothic', sans-serif">BIZ UDPGothic</option>
+                  <option value="'BIZ UDPMincho', serif">BIZ UDPMincho</option>
+                  <option value="monospace">Monospace</option>
+                  <option value="'Consolas', 'Monaco', 'Courier New', monospace">Consolas/Monaco</option>
+                  <option value="'Fira Code', 'Cascadia Code', monospace">Fira/Cascadia</option>
                 </select>
               </div>
               
               <div className="settings-row-triple">
                 <div>
-                  <label className="modal-label">サイズ (px)</label>
+                  <label className="modal-label">{tt('fontSize')} (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
@@ -1011,12 +1188,12 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, fontSize: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.fontSize) ? `${v} (初期値)` : v}</option>)}
+                      {[12, 14, 16, 18, 20, 24, 32].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.fontSize) ? `${v} (${tt('initialValue')})` : v}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">文字間 (px)</label>
+                  <label className="modal-label">{tt('letterSpacing')} (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
@@ -1032,12 +1209,12 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, letterSpacing: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.letterSpacing) ? `${v} (初期値)` : v}</option>)}
+                      {[0, 0.5, 1, 1.5, 2].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.letterSpacing) ? `${v} (${tt('initialValue')})` : v}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">行間</label>
+                  <label className="modal-label">{tt('lineHeight')}</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
@@ -1053,7 +1230,7 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, lineHeight: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.lineHeight) ? `${v} (初期値)` : v}</option>)}
+                      {[1.2, 1.5, 1.8, 2.0, 2.5].map(v => <option key={v} value={v}>{v === parseFloat(DEFAULT_SETTINGS.lineHeight) ? `${v} (${tt('initialValue')})` : v}</option>)}
                     </select>
                   </div>
                 </div>
@@ -1061,7 +1238,7 @@ export default function App() {
 
               <div className="settings-row-double">
                 <div>
-                  <label className="modal-label">余白 (px)</label>
+                  <label className="modal-label">{tt('padding')} (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
@@ -1076,12 +1253,12 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, editorPadding: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.editorPadding) ? `${v} (初期値)` : v}</option>)}
+                      {[16, 24, 32, 48, 64, 80].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.editorPadding) ? `${v} (${tt('initialValue')})` : v}</option>)}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">最大幅 (px)</label>
+                  <label className="modal-label">{tt('maxWidth')} (px)</label>
                   <div className="hybrid-input">
                     <input 
                       type="number" 
@@ -1096,7 +1273,7 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, maxWidth: e.target.value})}
                     >
                       <option value="">▼</option>
-                      {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.maxWidth) ? `${v} (初期値)` : v}</option>)}
+                      {[600, 800, 900, 1000, 1200, 2000].map(v => <option key={v} value={v}>{v === parseInt(DEFAULT_SETTINGS.maxWidth) ? `${v} (${tt('initialValue')})` : v}</option>)}
                     </select>
                   </div>
                 </div>
@@ -1104,7 +1281,7 @@ export default function App() {
 
               <div className="settings-row-double">
                 <div>
-                  <label className="modal-label">フォント色</label>
+                  <label className="modal-label">{tt('fontColor')}</label>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input 
                       type="color" 
@@ -1117,36 +1294,50 @@ export default function App() {
                       className="btn-secondary" 
                       style={{ padding: '4px 8px', fontSize: '0.75rem' }}
                       onClick={() => setTempSettings({...tempSettings, fontColor: DEFAULT_SETTINGS.fontColor})}
-                    >リセット</button>
+                    >{tt('reset')}</button>
                   </div>
                 </div>
                 <div>
-                  <label className="modal-label">テーマ</label>
+                  <label className="modal-label">{tt('theme')}</label>
                   <select 
                     className="modal-input" 
                     value={tempSettings.theme} 
                     onChange={e => setTempSettings({...tempSettings, theme: e.target.value})}
                   >
-                    <option value="system">システム設定 (初期値)</option>
-                    <option value="light">ライト</option>
-                    <option value="dark">ダーク</option>
+                    <option value="system">{tt('system')} ({tt('initialValue')})</option>
+                    <option value="light">{tt('light')}</option>
+                    <option value="dark">{tt('dark')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="settings-row-double">
                 <div>
-                  <label className="modal-label">Tabキー</label>
+                  <label className="modal-label">{tt('tabKey')}</label>
                   <select 
                     className="modal-input" 
                     value={tempSettings.tabSize} 
                     onChange={e => setTempSettings({...tempSettings, tabSize: e.target.value})}
                   >
-                    <option value="tab">Tab文字 (\t) (初期値)</option>
-                    <option value="2">スペース2つ</option>
-                    <option value="4">スペース4つ</option>
+                    <option value="tab">{tt('tabChar')} ({tt('initialValue')})</option>
+                    <option value="2">{tt('space2')}</option>
+                    <option value="4">{tt('space4')}</option>
                   </select>
                 </div>
+                <div>
+                  <label className="modal-label">{tt('language')}</label>
+                  <select 
+                    className="modal-input" 
+                    value={tempSettings.language} 
+                    onChange={e => setTempSettings({...tempSettings, language: e.target.value})}
+                  >
+                    <option value="ja">日本語</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </select>
+                </div>
+              </div>
+              <div className="settings-row-double">
                 <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '8px' }}>
                   <label className="checkbox-container">
                     <input 
@@ -1155,22 +1346,23 @@ export default function App() {
                       onChange={e => setTempSettings({...tempSettings, wordWrap: e.target.checked})}
                     />
                     <span className="checkmark"></span>
-                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>単語の折り返し</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{tt('wordWrap')}</span>
                   </label>
                 </div>
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={() => setIsSettingsModalOpen(false)}>キャンセル</button>
+              <button className="btn-secondary" onClick={() => setIsSettingsModalOpen(false)}>{tt('cancel')}</button>
               <button className="btn-primary-solid" onClick={async () => {
                 setEditorSettings(tempSettings);
                 await setVal('editorSettings', tempSettings);
                 setIsSettingsModalOpen(false);
-              }}>保存</button>
+              }}>{tt('save')}</button>
             </div>
           </div>
         </div>
       )}
+
 
       {/* Sidebar */}
       <div className="sidebar">
@@ -1180,10 +1372,10 @@ export default function App() {
           <div 
             className="security-badge" 
             onClick={() => setIsPrivacyModalOpen(true)}
-            title="セキュリティとプライバシーについて"
+            title={t('privacyHelp')}
           >
             <ShieldCheck size={14} />
-            <span>ローカル専用</span>
+            <span>{t('secureLocal')}</span>
           </div>
         </div>
         
@@ -1194,7 +1386,7 @@ export default function App() {
               <input 
                 type="text" 
                 className="search-input" 
-                placeholder="ファイル名で検索..." 
+                placeholder={t('searchPlaceholder')} 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -1205,13 +1397,13 @@ export default function App() {
         <div className="sidebar-actions">
           <button onClick={handleOpenFolder} className="btn btn-primary">
             <FolderOpen size={16} />
-            PCのフォルダを開く
+            {t('openFolderBtn')}
           </button>
           
           {savedHandle && !directoryHandle && (
             <button onClick={handleResumeFolder} className="btn btn-resume">
               <RefreshCw size={16} />
-              前回のフォルダを復元
+              {t('resumeFolder')}
             </button>
           )}
 
@@ -1219,17 +1411,18 @@ export default function App() {
             <div className="sidebar-actions-row">
               <button onClick={handleOpenNewFileModal} className="btn btn-primary" style={{ flex: 1 }}>
                 <Plus size={16} />
-                新規メモ
+                {t('newMemo')}
               </button>
               <button onClick={() => {
                 setTempSettings(editorSettings);
                 setIsSettingsModalOpen(true);
-              }} className="btn-icon" title="エディタ設定">
+              }} className="btn-icon" title={t('settingsTitle')}>
                 <Settings size={16} />
               </button>
             </div>
           )}
         </div>
+
 
         {/* File List */}
         <div 
@@ -1282,10 +1475,10 @@ export default function App() {
                 onContextMenu={handleContextMenu}
               />
             )) : (
-              <div className="empty-state">一致するファイルがありません</div>
+              <div className="empty-state">{t('emptyStateNoSearch')}</div>
             )
           ) : (
-            tabs.find(t => t.name === activeTabName)?.items.map(item => (
+            tabs.find(t_item => t_item.name === activeTabName)?.items.map(item => (
               <FileTreeItem 
                 key={item.path} 
                 item={item} 
@@ -1302,6 +1495,7 @@ export default function App() {
             ))
           )}
         </div>
+
       </div>
 
       {/* Main Area */}
@@ -1519,38 +1713,43 @@ export default function App() {
             {!directoryHandle ? (
               <div className="welcome-card">
                 <Info size={48} color="#4F46E5" style={{ marginBottom: '16px' }} />
-                <h2 className="welcome-title">ローカルファイル直接編集モード</h2>
+                <h2 className="welcome-title">{t('welcomeTitle')}</h2>
                 <div className="welcome-security-info">
                   <div className="security-item">
                     <ShieldCheck size={18} className="security-icon" />
-                    <span>データはあなたのPC内のみで完結</span>
+                    <span>{t('welcomeSecure1')}</span>
                   </div>
                   <div className="security-item">
                     <Globe size={18} className="security-icon" />
-                    <span>外部サーバーへの送信なし</span>
+                    <span>{t('welcomeSecure2')}</span>
                   </div>
                 </div>
 
                 <p className="welcome-desc">
-                  「PCのフォルダを開く」ボタンから、普段メモを保存しているフォルダを選択してください。<br/>
-                  テキストファイル（.txt, .md）を直接読み込み、編集・自動保存が可能です。
+                  {t('welcomeDesc')}
                 </p>
 
                 <div className="welcome-privacy-note" onClick={() => setIsPrivacyModalOpen(true)}>
-                  <Lock size={12} /> なぜ安全なのですか？
+                  <Lock size={12} /> {t('welcomePrivacyLink')}
                 </div>
 
                 {savedHandle && (
                   <button onClick={handleResumeFolder} className="btn-large">
                     <RefreshCw size={18} />
-                    前回のフォルダ「{savedHandle.name}」を復元
+                    {t('resumeFolder')} (「{savedHandle.name}」)
                   </button>
                 )}
+                
+                <button onClick={handleOpenFolder} className="btn-large-primary">
+                  <FolderOpen size={18} />
+                  {t('openFolderBtn')}
+                </button>
               </div>
             ) : (
-              <div style={{ color: '#9CA3AF' }}>左のツリーからファイルを選択してください</div>
+              <div style={{ color: '#9CA3AF' }}>Please select a file from the sidebar</div>
             )}
           </div>
+
         )}
       </div>
 
@@ -1667,13 +1866,13 @@ export default function App() {
                 handleOpenNewFileModal(contextMenu.targetItem.handle);
                 closeContextMenu();
               }}>
-                <FilePlus size={14} /> 新規メモ
+                <FilePlus size={14} /> {t('newMemo')}
               </div>
               <div className="context-menu-item" onClick={() => {
                 handleCreateFolderFromMenu();
                 closeContextMenu();
               }}>
-                <FolderPlus size={14} /> 新規フォルダ
+                <FolderPlus size={14} /> {t('newFolder')}
               </div>
               <div className="context-menu-divider"></div>
             </>
@@ -1684,7 +1883,7 @@ export default function App() {
                 handleRenameFromMenu();
                 closeContextMenu();
               }}>
-                <Edit3 size={14} /> 名前を変更
+                <Edit3 size={14} /> {t('rename')}
               </div>
               {!contextMenu.targetItem.isRoot && (
                 <>
@@ -1692,21 +1891,21 @@ export default function App() {
                     handleMoveToParent(contextMenu.targetItem);
                     closeContextMenu();
                   }}>
-                    <ArrowUp size={14} /> 一階層上に移動
+                    <ArrowUp size={14} /> {t('moveUp')}
                   </div>
                   <div className="context-menu-item" onClick={() => {
                     setMoveTargetItem(contextMenu.targetItem);
                     setIsMoveModalOpen(true);
                     closeContextMenu();
                   }}>
-                    <Move size={14} /> 指定フォルダへ移動
+                    <Move size={14} /> {t('moveToFolder')}
                   </div>
                   <div className="context-menu-item" onClick={() => {
                     setMoveTargetItem(contextMenu.targetItem);
                     setIsMoveToTabModalOpen(true);
                     closeContextMenu();
                   }}>
-                    <Columns size={14} /> 指定タブへ移動
+                    <Columns size={14} /> {t('moveToTab')}
                   </div>
                 </>
               )}
@@ -1717,9 +1916,10 @@ export default function App() {
               handleDeleteFromMenu();
               closeContextMenu();
             }}>
-              <Trash2 size={14} /> 削除
+              <Trash2 size={14} /> {t('delete')}
             </div>
           )}
+
         </div>
       )}
     </div>
