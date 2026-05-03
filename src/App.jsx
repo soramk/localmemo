@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe, ArrowUp, Move, Download, FileCode, Clock, Calendar, Link, Table, CheckSquare, Hash } from 'lucide-react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe, ArrowUp, Move, Download, FileCode, Clock, Calendar, Link, Table, CheckSquare, Hash, Type } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './index.css';
@@ -519,40 +519,7 @@ export default function App() {
     });
   }, []);
 
-  const handleEditorScroll = (e) => {
-    if (viewMode !== 'split' || !previewRef.current) return;
-    if (isSyncingLeft.current) {
-      isSyncingLeft.current = false;
       return;
-    }
-    isSyncingRight.current = true;
-    
-    const textarea = e.target;
-    const maxScrollTop = textarea.scrollHeight - textarea.clientHeight;
-    if (maxScrollTop <= 0) return;
-    
-    const scrollPercentage = textarea.scrollTop / maxScrollTop;
-    const preview = previewRef.current;
-    preview.scrollTop = scrollPercentage * (preview.scrollHeight - preview.clientHeight);
-  };
-
-  const handlePreviewScroll = (e) => {
-    if (viewMode !== 'split' || !textareaRef.current) return;
-    if (isSyncingRight.current) {
-      isSyncingRight.current = false;
-      return;
-    }
-    isSyncingLeft.current = true;
-    
-    const preview = e.target;
-    const maxScrollTop = preview.scrollHeight - preview.clientHeight;
-    if (maxScrollTop <= 0) return;
-    
-    const scrollPercentage = preview.scrollTop / maxScrollTop;
-    const textarea = textareaRef.current;
-    textarea.scrollTop = scrollPercentage * (textarea.scrollHeight - textarea.clientHeight);
-  };
-
   // Settings State
   const [editorSettings, setEditorSettings] = useState(DEFAULT_SETTINGS);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -1049,6 +1016,32 @@ export default function App() {
           setCompletion(prev => ({ ...prev, trigger: textBefore.substring(0, textBefore.length - currentWord.length + 1).split('').pop() || '', query: currentWord.substring(1) }));
         }
       }
+    }
+  };
+
+  const handleEditorScroll = (e) => {
+    if (viewMode !== 'split' || isSyncingRight.current) {
+      isSyncingRight.current = false;
+      return;
+    }
+    if (textareaRef.current && previewRef.current) {
+      isSyncingLeft.current = true;
+      const { scrollTop, scrollHeight, clientHeight } = e.target;
+      const ratio = scrollTop / (scrollHeight - clientHeight);
+      previewRef.current.scrollTop = ratio * (previewRef.current.scrollHeight - previewRef.current.clientHeight);
+    }
+  };
+
+  const handlePreviewScroll = (e) => {
+    if (viewMode !== 'split' || isSyncingLeft.current) {
+      isSyncingLeft.current = false;
+      return;
+    }
+    if (textareaRef.current && previewRef.current) {
+      isSyncingRight.current = true;
+      const { scrollTop, scrollHeight, clientHeight } = e.target;
+      const ratio = scrollTop / (scrollHeight - clientHeight);
+      textareaRef.current.scrollTop = ratio * (textareaRef.current.scrollHeight - textareaRef.current.clientHeight);
     }
   };
 
@@ -1973,7 +1966,7 @@ export default function App() {
               {(viewMode === 'edit' || viewMode === 'split') && (
                 <textarea
                   ref={textareaRef}
-                  className="editor-textarea"
+                  className={`editor-textarea ${viewMode === 'split' ? 'hide-scrollbar' : ''}`}
                   style={{
                     fontFamily: editorSettings.fontFamily,
                     fontSize: `${editorSettings.fontSize}px`,
@@ -1984,7 +1977,9 @@ export default function App() {
                     margin: '0',
                     color: editorSettings.fontColor,
                     whiteSpace: editorSettings.wordWrap ? 'pre-wrap' : 'pre',
-                    overflowX: editorSettings.wordWrap ? 'hidden' : 'auto'
+                    overflowX: editorSettings.wordWrap ? 'hidden' : 'auto',
+                    scrollbarWidth: viewMode === 'split' ? 'none' : undefined, // Split時は隠す
+                    msOverflowStyle: viewMode === 'split' ? 'none' : undefined,
                   }}
                   value={editorContent}
                   onChange={handleEditorChange}

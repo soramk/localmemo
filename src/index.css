@@ -353,6 +353,14 @@ body {
   overflow-y: auto;
 }
 
+.editor-textarea.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.editor-textarea.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 .welcome-screen {
   flex: 1;
   display: flex;
