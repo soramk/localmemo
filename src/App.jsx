@@ -248,8 +248,11 @@ function getCaretCoordinates(element, position) {
   const style = window.getComputedStyle(element);
   
   const div = document.createElement('div');
-  div.style.position = 'absolute';
+  div.style.position = 'fixed'; // viewport基準で固定
+  div.style.left = '-9999px';  // 画面の外に飛ばす
+  div.style.top = '-9999px';
   div.style.visibility = 'hidden';
+  div.style.pointerEvents = 'none';
   div.style.whiteSpace = 'pre-wrap';
   div.style.wordWrap = 'break-word';
   div.style.width = style.width;
