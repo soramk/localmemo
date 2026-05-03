@@ -244,43 +244,50 @@ async function getVal(key) {
 }
 
 // Helper to get caret coordinates in a textarea
+let mirrorDiv = null;
+
 function getCaretCoordinates(element, position) {
+  if (!mirrorDiv) {
+    mirrorDiv = document.createElement('div');
+    mirrorDiv.id = 'textarea-caret-position-mirror-div';
+    document.body.appendChild(mirrorDiv);
+  }
+
   const style = window.getComputedStyle(element);
   
-  const div = document.createElement('div');
-  div.style.position = 'fixed'; // viewport基準で固定
-  div.style.left = '-9999px';  // 画面の外に飛ばす
-  div.style.top = '-9999px';
-  div.style.visibility = 'hidden';
-  div.style.pointerEvents = 'none';
-  div.style.whiteSpace = 'pre-wrap';
-  div.style.wordWrap = 'break-word';
-  div.style.width = style.width;
-  div.style.fontFamily = style.fontFamily;
-  div.style.fontSize = style.fontSize;
-  div.style.lineHeight = style.lineHeight;
-  div.style.padding = style.padding;
-  div.style.border = style.border;
-  div.style.boxSizing = style.boxSizing;
-  div.style.letterSpacing = style.letterSpacing;
-  div.style.overflow = 'hidden'; // スクロールバーが表示されないように強制
+  mirrorDiv.style.position = 'fixed';
+  mirrorDiv.style.left = '-9999px';
+  mirrorDiv.style.top = '0';
+  mirrorDiv.style.visibility = 'hidden';
+  mirrorDiv.style.pointerEvents = 'none';
+  mirrorDiv.style.whiteSpace = 'pre-wrap';
+  mirrorDiv.style.wordWrap = 'break-word';
+  mirrorDiv.style.width = style.width;
+  mirrorDiv.style.fontFamily = style.fontFamily;
+  mirrorDiv.style.fontSize = style.fontSize;
+  mirrorDiv.style.lineHeight = style.lineHeight;
+  mirrorDiv.style.padding = style.padding;
+  mirrorDiv.style.border = style.border;
+  mirrorDiv.style.boxSizing = style.boxSizing;
+  mirrorDiv.style.letterSpacing = style.letterSpacing;
+  mirrorDiv.style.overflow = 'hidden';
   
   const textBefore = element.value.substring(0, position);
-  div.textContent = textBefore;
+  mirrorDiv.textContent = textBefore;
   
   const span = document.createElement('span');
   span.textContent = element.value.substring(position) || '.';
-  div.appendChild(span);
+  mirrorDiv.appendChild(span);
   
-  document.body.appendChild(div);
   const { offsetLeft: spanLeft, offsetTop: spanTop } = span;
-  document.body.removeChild(div);
   
   const rect = element.getBoundingClientRect();
+  const styleLineHeight = parseInt(style.lineHeight);
+  const lineHeight = isNaN(styleLineHeight) ? 20 : styleLineHeight;
   
   return {
     x: rect.left + spanLeft - element.scrollLeft,
-    y: rect.top + spanTop - element.scrollTop + parseInt(style.lineHeight || 20)
+    y: rect.top + spanTop - element.scrollTop + lineHeight
   };
 }
 
