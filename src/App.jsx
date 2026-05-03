@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe, ArrowUp, Move, Download, FileCode } from 'lucide-react';
+import { FolderOpen, FileText, Save, Folder, ChevronRight, ChevronDown, AlertCircle, Info, RefreshCw, Plus, Trash2, Eye, Edit2, Settings, Star, Search, Columns, Moon, Sun, Monitor, Image as ImageIcon, FolderPlus, FilePlus, Edit3, ShieldCheck, Lock, ExternalLink, Globe, ArrowUp, Move, Download, FileCode, Clock, Calendar, Link, Table, CheckSquare, Hash } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './index.css';
@@ -239,6 +239,43 @@ async function getVal(key) {
   });
 }
 
+// Helper to get caret coordinates in a textarea
+function getCaretCoordinates(element, position) {
+  const style = window.getComputedStyle(element);
+  
+  const div = document.createElement('div');
+  div.style.position = 'absolute';
+  div.style.visibility = 'hidden';
+  div.style.whiteSpace = 'pre-wrap';
+  div.style.wordWrap = 'break-word';
+  div.style.width = style.width;
+  div.style.fontFamily = style.fontFamily;
+  div.style.fontSize = style.fontSize;
+  div.style.lineHeight = style.lineHeight;
+  div.style.padding = style.padding;
+  div.style.border = style.border;
+  div.style.boxSizing = style.boxSizing;
+  div.style.letterSpacing = style.letterSpacing;
+  
+  const textBefore = element.value.substring(0, position);
+  div.textContent = textBefore;
+  
+  const span = document.createElement('span');
+  span.textContent = element.value.substring(position) || '.';
+  div.appendChild(span);
+  
+  document.body.appendChild(div);
+  const { offsetLeft: spanLeft, offsetTop: spanTop } = span;
+  document.body.removeChild(div);
+  
+  const rect = element.getBoundingClientRect();
+  
+  return {
+    x: rect.left + spanLeft - element.scrollLeft,
+    y: rect.top + spanTop - element.scrollTop + parseInt(style.lineHeight || 20)
+  };
+}
+
 const CustomImage = ({ src, alt, selectedFile }) => {
   const [imgSrc, setImgSrc] = useState(null);
 
@@ -420,6 +457,17 @@ export default function App() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [starredFiles, setStarredFiles] = useState([]);
+
+  // Completion State
+  const [completion, setCompletion] = useState({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    trigger: '',
+    query: '',
+    selectedIndex: 0,
+    suggestions: []
+  });
   
   const textareaRef = useRef(null);
   const previewRef = useRef(null);
@@ -432,8 +480,13 @@ export default function App() {
     setContextMenu(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
   }, []);
 
+  const closeCompletion = useCallback(() => {
+    setCompletion(prev => prev.isOpen ? { ...prev, isOpen: false } : prev);
+  }, []);
+
   useEffect(() => {
     window.addEventListener('click', closeContextMenu);
+    window.addEventListener('click', closeCompletion);
     
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
@@ -881,8 +934,93 @@ export default function App() {
   };
 
   const handleEditorChange = (e) => {
-    setEditorContent(e.target.value);
+    const value = e.target.value;
+    const selectionStart = e.target.selectionStart;
+    setEditorContent(value);
     setIsDirty(true);
+
+    // Completion Trigger Logic
+    const lastChar = value[selectionStart - 1];
+    const textBefore = value.substring(0, selectionStart);
+    
+    // Check for Slash Command
+    if (lastChar === '/') {
+      const lineBefore = textBefore.split('\n').pop();
+      if (lineBefore === '/') {
+        const coords = getCaretCoordinates(e.target, selectionStart);
+        setCompletion({
+          isOpen: true,
+          x: coords.x,
+          y: coords.y,
+          trigger: '/',
+          query: '',
+          selectedIndex: 0,
+          suggestions: [
+            { id: 'today', label: '今日の日付', desc: '/today', icon: <Calendar size={14}/> },
+            { id: 'now', label: '現在の時刻', desc: '/now', icon: <Clock size={14}/> },
+            { id: 'h1', label: '見出し 1', desc: '# Heading', icon: <Hash size={14}/> },
+            { id: 'h2', label: '見出し 2', desc: '## Heading', icon: <Hash size={14}/> },
+            { id: 'h3', label: '見出し 3', desc: '### Heading', icon: <Hash size={14}/> },
+            { id: 'link', label: 'リンク', desc: '[text](url)', icon: <Link size={14}/> },
+            { id: 'table', label: 'テーブル', desc: '| col | col |', icon: <Table size={14}/> },
+            { id: 'todo', label: 'チェックリスト', desc: '- [ ] item', icon: <CheckSquare size={14}/> },
+          ]
+        });
+        return;
+      }
+    }
+
+    // Check for File Link [[
+    if (textBefore.endsWith('[[')) {
+      const coords = getCaretCoordinates(e.target, selectionStart);
+      const fileSuggestions = flattenedFiles
+        .filter(f => f.kind === 'file')
+        .map(f => ({ id: f.path, label: f.name, desc: f.path, icon: <FileText size={14}/> }));
+      
+      setCompletion({
+        isOpen: true,
+        x: coords.x,
+        y: coords.y,
+        trigger: '[[',
+        query: '',
+        selectedIndex: 0,
+        suggestions: fileSuggestions
+      });
+      return;
+    }
+
+    // Update query if completion is open
+    if (completion.isOpen) {
+      const currentQuery = textBefore.substring(textBefore.lastIndexOf(completion.trigger) + completion.trigger.length);
+      if (currentQuery.includes(' ') || currentQuery.includes('\n')) {
+        closeCompletion();
+      } else {
+        setCompletion(prev => ({ ...prev, query: currentQuery, selectedIndex: 0 }));
+      }
+      return;
+    }
+
+    // Dynamic Word Completion (Experimental)
+    if (lastChar && /[a-zA-Z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(lastChar)) {
+      const currentWord = textBefore.split(/[\s\n\W]/).pop();
+      if (currentWord && currentWord.length >= 2) {
+        const words = Array.from(new Set(editorContent.split(/[\s\n\W]/))).filter(w => w.length > 2 && w !== currentWord && w.startsWith(currentWord));
+        if (words.length > 0) {
+          const coords = getCaretCoordinates(e.target, selectionStart);
+          setCompletion({
+            isOpen: true,
+            x: coords.x,
+            y: coords.y,
+            trigger: currentWord[0], // approximate
+            query: currentWord.substring(1),
+            selectedIndex: 0,
+            suggestions: words.slice(0, 5).map(w => ({ id: w, label: w, desc: '既出の単語', icon: <Edit3 size={14}/> }))
+          });
+          // Update the trigger to the current word's start
+          setCompletion(prev => ({ ...prev, trigger: textBefore.substring(0, textBefore.length - currentWord.length + 1).split('').pop() || '', query: currentWord.substring(1) }));
+        }
+      }
+    }
   };
 
   const saveFile = useCallback(async (fileItem, content) => {
@@ -907,6 +1045,63 @@ export default function App() {
     }, 1000);
     return () => clearTimeout(timer);
   }, [editorContent, isDirty, selectedFile, saveFile]);
+
+  const filteredSuggestions = useMemo(() => {
+    if (!completion.isOpen) return [];
+    const query = completion.query.toLowerCase();
+    return completion.suggestions.filter(s => 
+      s.label.toLowerCase().includes(query) || s.id.toLowerCase().includes(query)
+    );
+  }, [completion.isOpen, completion.query, completion.suggestions]);
+
+  const applyCompletion = useCallback((suggestion) => {
+    if (!textareaRef.current) return;
+    const target = textareaRef.current;
+    const start = target.selectionStart;
+    
+    // Find where the current completion segment started
+    let textBeforeTrigger = editorContent.substring(0, start).lastIndexOf(completion.trigger);
+    // For words, it might be the start of the word
+    if (completion.trigger !== '/' && completion.trigger !== '[[') {
+      const textBefore = editorContent.substring(0, start);
+      const words = textBefore.split(/[\s\n\W]/);
+      const lastWord = words[words.length - 1];
+      textBeforeTrigger = start - lastWord.length;
+    }
+    
+    let insertText = '';
+    let cursorOffset = 0;
+
+    if (completion.trigger === '/') {
+      const now = new Date();
+      switch (suggestion.id) {
+        case 'today': insertText = now.toLocaleDateString(); break;
+        case 'now': insertText = now.toLocaleTimeString(); break;
+        case 'h1': insertText = '# '; break;
+        case 'h2': insertText = '## '; break;
+        case 'h3': insertText = '### '; break;
+        case 'link': insertText = '[]()'; cursorOffset = 1; break;
+        case 'table': insertText = '| Header | Header |\n| :--- | :--- |\n| Content | Content |'; break;
+        case 'todo': insertText = '- [ ] '; break;
+        default: insertText = suggestion.label;
+      }
+    } else if (completion.trigger === '[[') {
+      insertText = `[[${suggestion.label}]]`;
+    } else {
+      insertText = suggestion.label;
+    }
+
+    const newText = editorContent.substring(0, textBeforeTrigger) + insertText + editorContent.substring(start);
+    setEditorContent(newText);
+    setIsDirty(true);
+    closeCompletion();
+
+    setTimeout(() => {
+      target.focus();
+      const newPos = textBeforeTrigger + (cursorOffset || insertText.length);
+      target.selectionStart = target.selectionEnd = newPos;
+    }, 0);
+  }, [editorContent, completion, closeCompletion]);
 
   const tabs = useMemo(() => {
     if (!files.length) return [];
@@ -1757,6 +1952,30 @@ export default function App() {
                   onDrop={handleEditorDrop}
                   onDragOver={(e) => e.preventDefault()}
                   onKeyDown={(e) => {
+                    // Completion Menu Navigation
+                    if (completion.isOpen) {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setCompletion(prev => ({ ...prev, selectedIndex: (prev.selectedIndex + 1) % prev.suggestions.length }));
+                        return;
+                      }
+                      if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setCompletion(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.suggestions.length) % prev.suggestions.length }));
+                        return;
+                      }
+                      if (e.key === 'Enter' || e.key === 'Tab') {
+                        e.preventDefault();
+                        applyCompletion(completion.suggestions[completion.selectedIndex]);
+                        return;
+                      }
+                      if (e.key === 'Escape') {
+                        e.preventDefault();
+                        closeCompletion();
+                        return;
+                      }
+                    }
+
                     if (e.key === 'Tab') {
                       e.preventDefault();
                       const target = e.target;
@@ -1773,6 +1992,28 @@ export default function App() {
                           textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + tabStr.length;
                         }
                       }, 0);
+                    }
+
+                    // Smart Brackets and Auto-close
+                    const pairMap = { '[': ']', '(': ')', '{': '}', '"': '"', "'": "'" };
+                    if (pairMap[e.key]) {
+                      const target = e.target;
+                      const start = target.selectionStart;
+                      const end = target.selectionEnd;
+                      
+                      if (start !== end) {
+                        e.preventDefault();
+                        const selectedText = editorContent.substring(start, end);
+                        const newText = editorContent.substring(0, start) + e.key + selectedText + pairMap[e.key] + editorContent.substring(end);
+                        setEditorContent(newText);
+                        setIsDirty(true);
+                        setTimeout(() => {
+                          if (textareaRef.current) {
+                            textareaRef.current.selectionStart = start + 1;
+                            textareaRef.current.selectionEnd = end + 1;
+                          }
+                        }, 0);
+                      }
                     }
                   }}
                   placeholder="メモを入力... (画像をドラッグ＆ドロップで添付できます)"
@@ -2045,6 +2286,30 @@ export default function App() {
             </div>
           )}
 
+        </div>
+      )}
+      {/* Completion Menu */}
+      {completion.isOpen && filteredSuggestions.length > 0 && (
+        <div 
+          className="completion-menu" 
+          style={{ left: completion.x, top: completion.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="completion-header">
+            {completion.trigger === '/' ? 'コマンド' : 'ファイルリンク'}
+          </div>
+          {filteredSuggestions.map((suggestion, index) => (
+            <div 
+              key={suggestion.id}
+              className={`completion-item ${index === completion.selectedIndex ? 'selected' : ''}`}
+              onClick={() => applyCompletion(suggestion)}
+              onMouseEnter={() => setCompletion(prev => ({ ...prev, selectedIndex: index }))}
+            >
+              <div className="completion-item-icon">{suggestion.icon}</div>
+              <div className="completion-item-label">{suggestion.label}</div>
+              <div className="completion-item-desc">{suggestion.desc}</div>
+            </div>
+          ))}
         </div>
       )}
     </div>

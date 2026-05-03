@@ -981,3 +981,103 @@ body {
   transform: translateY(-2px);
 }
 
+
+/* Completion Menu */
+.completion-menu {
+  position: fixed;
+  background-color: var(--modal-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+  padding: 6px;
+  min-width: 220px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: completionAppear 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes completionAppear {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.completion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  scroll-margin: 6px;
+}
+
+.completion-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.completion-item.selected {
+  background-color: var(--active-bg);
+  color: var(--active-text);
+}
+
+.completion-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background-color: var(--tab-bg);
+  color: var(--text-muted);
+}
+
+.completion-item.selected .completion-item-icon {
+  background-color: rgba(79, 70, 229, 0.1);
+  color: var(--primary);
+}
+
+.completion-item-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.completion-item-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.completion-item.selected .completion-item-desc {
+  color: rgba(79, 70, 229, 0.7);
+}
+
+.completion-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 6px;
+}
+
+.completion-header {
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* Hide scrollbar for completion menu but allow scrolling */
+.completion-menu::-webkit-scrollbar {
+  width: 4px;
+}
+.completion-menu::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+}
