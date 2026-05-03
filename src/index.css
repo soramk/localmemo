@@ -1,5 +1,6 @@
 :root {
   --primary: #4F46E5;
+  --primary-rgb: 79, 70, 229;
   --primary-hover: #4338CA;
   --bg-color: #F9FAFB;
   --sidebar-bg: #FFFFFF;
@@ -20,6 +21,7 @@
 
 [data-theme="dark"] {
   --primary: #818CF8;
+  --primary-rgb: 129, 140, 248;
   --primary-hover: #6366F1;
   --bg-color: #111827;
   --sidebar-bg: #1F2937;
@@ -487,6 +489,7 @@ body {
   color: var(--text-main);
   background-color: transparent;
   overflow-y: auto;
+  overflow-x: auto;
 }
 
 .markdown-preview h1 { font-size: 2rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3rem; }
@@ -502,6 +505,11 @@ body {
 .markdown-preview a { color: var(--primary); text-decoration: none; }
 .markdown-preview a:hover { text-decoration: underline; }
 .markdown-preview img { max-width: 100%; height: auto; border-radius: 8px; }
+.markdown-preview table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; font-size: 0.95rem; border-radius: 8px; overflow: hidden; }
+.markdown-preview th, .markdown-preview td { border: 1px solid var(--border-color); padding: 10px 14px; text-align: left; }
+.markdown-preview th { background-color: var(--tab-bg); font-weight: 600; color: var(--text-main); }
+.markdown-preview tr:nth-child(even) { background-color: rgba(var(--primary-rgb), 0.03); }
+.markdown-preview input[type="checkbox"] { margin-right: 8px; width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; vertical-align: middle; }
 
 /* Custom Modal */
 .modal-overlay {
