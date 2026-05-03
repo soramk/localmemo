@@ -1991,8 +1991,10 @@ export default function App() {
                     lineHeight: editorSettings.lineHeight,
                     paddingTop: `${editorSettings.editorPadding}px`,
                     paddingBottom: `${editorSettings.editorPadding}px`,
-                    paddingLeft: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
-                    paddingRight: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
+                    paddingLeft: `${editorSettings.editorPadding}px`,
+                    paddingRight: viewMode === 'split' 
+                      ? `${editorSettings.editorPadding}px` 
+                      : `max(${editorSettings.editorPadding}px, calc(100% - ${editorSettings.maxWidth}px))`,
                     margin: '0',
                     color: editorSettings.fontColor,
                     whiteSpace: editorSettings.wordWrap ? 'pre-wrap' : 'pre',
@@ -2137,8 +2139,10 @@ export default function App() {
                     lineHeight: editorSettings.lineHeight,
                     paddingTop: mediaData?.type === 'html' ? 0 : `${editorSettings.editorPadding}px`,
                     paddingBottom: mediaData?.type === 'html' ? 0 : `${editorSettings.editorPadding}px`,
-                    paddingLeft: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
-                    paddingRight: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
+                    paddingLeft: `${editorSettings.editorPadding}px`,
+                    paddingRight: viewMode === 'split' 
+                      ? `${editorSettings.editorPadding}px` 
+                      : `max(${editorSettings.editorPadding}px, calc(100% - ${editorSettings.maxWidth}px))`,
                     margin: '0',
                     color: editorSettings.fontColor,
                     overflow: mediaData?.type === 'html' ? 'hidden' : undefined
