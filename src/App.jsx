@@ -1007,7 +1007,8 @@ export default function App() {
         trigger: '[[',
         query: '',
         selectedIndex: 0,
-        suggestions: fileSuggestions
+        suggestions: fileSuggestions,
+        history: []
       });
       return;
     }
@@ -1034,10 +1035,11 @@ export default function App() {
             isOpen: true,
             x: coords.x,
             y: coords.y,
-            trigger: currentWord[0], // approximate
+            trigger: currentWord[0],
             query: currentWord.substring(1),
             selectedIndex: 0,
-            suggestions: words.slice(0, 5).map(w => ({ id: w, label: w, desc: '既出の単語', icon: <Edit3 size={14}/> }))
+            suggestions: words.slice(0, 5).map(w => ({ id: w, label: w, desc: '既出の単語', icon: <Edit3 size={14}/> })),
+            history: []
           });
           // Update the trigger to the current word's start
           setCompletion(prev => ({ ...prev, trigger: textBefore.substring(0, textBefore.length - currentWord.length + 1).split('').pop() || '', query: currentWord.substring(1) }));
