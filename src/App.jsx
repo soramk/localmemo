@@ -1019,28 +1019,46 @@ export default function App() {
   };
 
   const handleEditorScroll = (e) => {
-    if (viewMode !== 'split' || isSyncingRight.current) {
+    if (viewMode !== 'split') return;
+    
+    if (isSyncingRight.current) {
       isSyncingRight.current = false;
       return;
     }
+    
     if (textareaRef.current && previewRef.current) {
-      isSyncingLeft.current = true;
       const { scrollTop, scrollHeight, clientHeight } = e.target;
+      if (scrollHeight <= clientHeight) return;
+      
       const ratio = scrollTop / (scrollHeight - clientHeight);
-      previewRef.current.scrollTop = ratio * (previewRef.current.scrollHeight - previewRef.current.clientHeight);
+      const targetScrollTop = ratio * (previewRef.current.scrollHeight - previewRef.current.clientHeight);
+      
+      if (Math.abs(previewRef.current.scrollTop - targetScrollTop) > 1) {
+        isSyncingLeft.current = true;
+        previewRef.current.scrollTop = targetScrollTop;
+      }
     }
   };
 
   const handlePreviewScroll = (e) => {
-    if (viewMode !== 'split' || isSyncingLeft.current) {
+    if (viewMode !== 'split') return;
+    
+    if (isSyncingLeft.current) {
       isSyncingLeft.current = false;
       return;
     }
+    
     if (textareaRef.current && previewRef.current) {
-      isSyncingRight.current = true;
       const { scrollTop, scrollHeight, clientHeight } = e.target;
+      if (scrollHeight <= clientHeight) return;
+      
       const ratio = scrollTop / (scrollHeight - clientHeight);
-      textareaRef.current.scrollTop = ratio * (textareaRef.current.scrollHeight - textareaRef.current.clientHeight);
+      const targetScrollTop = ratio * (textareaRef.current.scrollHeight - textareaRef.current.clientHeight);
+      
+      if (Math.abs(textareaRef.current.scrollTop - targetScrollTop) > 1) {
+        isSyncingRight.current = true;
+        textareaRef.current.scrollTop = targetScrollTop;
+      }
     }
   };
 
@@ -1971,13 +1989,15 @@ export default function App() {
                     fontSize: `${editorSettings.fontSize}px`,
                     letterSpacing: `${editorSettings.letterSpacing}px`,
                     lineHeight: editorSettings.lineHeight,
-                    padding: `${editorSettings.editorPadding}px`,
-                    maxWidth: `${editorSettings.maxWidth}px`,
+                    paddingTop: `${editorSettings.editorPadding}px`,
+                    paddingBottom: `${editorSettings.editorPadding}px`,
+                    paddingLeft: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
+                    paddingRight: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
                     margin: '0',
                     color: editorSettings.fontColor,
                     whiteSpace: editorSettings.wordWrap ? 'pre-wrap' : 'pre',
                     overflowX: editorSettings.wordWrap ? 'hidden' : 'auto',
-                    scrollbarWidth: viewMode === 'split' ? 'none' : undefined, // Split時は隠す
+                    scrollbarWidth: viewMode === 'split' ? 'none' : undefined,
                     msOverflowStyle: viewMode === 'split' ? 'none' : undefined,
                   }}
                   value={editorContent}
@@ -2115,12 +2135,12 @@ export default function App() {
                     fontSize: `${editorSettings.fontSize}px`,
                     letterSpacing: `${editorSettings.letterSpacing}px`,
                     lineHeight: editorSettings.lineHeight,
-                    padding: `${editorSettings.editorPadding}px`,
-                    maxWidth: `${editorSettings.maxWidth}px`,
+                    paddingTop: mediaData?.type === 'html' ? 0 : `${editorSettings.editorPadding}px`,
+                    paddingBottom: mediaData?.type === 'html' ? 0 : `${editorSettings.editorPadding}px`,
+                    paddingLeft: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
+                    paddingRight: `max(${editorSettings.editorPadding}px, calc((100% - ${editorSettings.maxWidth}px) / 2))`,
                     margin: '0',
                     color: editorSettings.fontColor,
-                    paddingTop: mediaData?.type === 'html' ? 0 : undefined,
-                    paddingBottom: mediaData?.type === 'html' ? 0 : undefined,
                     overflow: mediaData?.type === 'html' ? 'hidden' : undefined
                   }}
                 >
