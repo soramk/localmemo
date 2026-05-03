@@ -519,7 +519,6 @@ export default function App() {
     });
   }, []);
 
-      return;
   // Settings State
   const [editorSettings, setEditorSettings] = useState(DEFAULT_SETTINGS);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
