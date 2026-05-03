@@ -263,6 +263,7 @@ function getCaretCoordinates(element, position) {
   div.style.border = style.border;
   div.style.boxSizing = style.boxSizing;
   div.style.letterSpacing = style.letterSpacing;
+  div.style.overflow = 'hidden'; // スクロールバーが表示されないように強制
   
   const textBefore = element.value.substring(0, position);
   div.textContent = textBefore;
