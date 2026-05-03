@@ -29,6 +29,7 @@ const DEFAULT_SETTINGS = {
   tabSize: 'tab',
   theme: 'system',
   wordWrap: true,
+  dynamicSuggestions: true,
   language: 'ja'
 };
 
@@ -45,6 +46,7 @@ const TRANSLATIONS = {
     theme: "テーマ",
     tabKey: "Tabキー",
     wordWrap: "単語の折り返し",
+    dynamicSuggestions: "入力補完（自動提案）",
     language: "言語",
     save: "保存",
     cancel: "キャンセル",
@@ -102,6 +104,7 @@ const TRANSLATIONS = {
     theme: "Theme",
     tabKey: "Tab Key",
     wordWrap: "Word Wrap",
+    dynamicSuggestions: "Dynamic Suggestions",
     language: "Language",
     save: "Save",
     cancel: "Cancel",
@@ -159,6 +162,7 @@ const TRANSLATIONS = {
     theme: "Tema",
     tabKey: "Tecla Tab",
     wordWrap: "Ajuste de línea",
+    dynamicSuggestions: "Sugerencias dinámicas",
     language: "Idioma",
     save: "Guardar",
     cancel: "Cancelar",
@@ -466,7 +470,8 @@ export default function App() {
     trigger: '',
     query: '',
     selectedIndex: 0,
-    suggestions: []
+    suggestions: [],
+    history: [] // For sub-menus
   });
   
   const textareaRef = useRef(null);
@@ -948,6 +953,32 @@ export default function App() {
       const lineBefore = textBefore.split('\n').pop();
       if (lineBefore === '/') {
         const coords = getCaretCoordinates(e.target, selectionStart);
+        const categories = [
+          { 
+            id: 'basic', label: '基本テキスト', type: 'category', icon: <Type size={14}/>,
+            children: [
+              { id: 'h1', label: '見出し 1', desc: '# Heading', icon: <Hash size={14}/> },
+              { id: 'h2', label: '見出し 2', desc: '## Heading', icon: <Hash size={14}/> },
+              { id: 'h3', label: '見出し 3', desc: '### Heading', icon: <Hash size={14}/> },
+            ]
+          },
+          { 
+            id: 'insert', label: '挿入', type: 'category', icon: <Plus size={14}/>,
+            children: [
+              { id: 'today', label: '今日の日付', desc: '/today', icon: <Calendar size={14}/> },
+              { id: 'now', label: '現在の時刻', desc: '/now', icon: <Clock size={14}/> },
+              { id: 'link', label: 'リンク', desc: '[text](url)', icon: <Link size={14}/> },
+            ]
+          },
+          { 
+            id: 'layout', label: 'レイアウト', type: 'category', icon: <Columns size={14}/>,
+            children: [
+              { id: 'table', label: 'テーブル', desc: '| col | col |', icon: <Table size={14}/> },
+              { id: 'todo', label: 'チェックリスト', desc: '- [ ] item', icon: <CheckSquare size={14}/> },
+            ]
+          },
+        ];
+        
         setCompletion({
           isOpen: true,
           x: coords.x,
@@ -955,16 +986,8 @@ export default function App() {
           trigger: '/',
           query: '',
           selectedIndex: 0,
-          suggestions: [
-            { id: 'today', label: '今日の日付', desc: '/today', icon: <Calendar size={14}/> },
-            { id: 'now', label: '現在の時刻', desc: '/now', icon: <Clock size={14}/> },
-            { id: 'h1', label: '見出し 1', desc: '# Heading', icon: <Hash size={14}/> },
-            { id: 'h2', label: '見出し 2', desc: '## Heading', icon: <Hash size={14}/> },
-            { id: 'h3', label: '見出し 3', desc: '### Heading', icon: <Hash size={14}/> },
-            { id: 'link', label: 'リンク', desc: '[text](url)', icon: <Link size={14}/> },
-            { id: 'table', label: 'テーブル', desc: '| col | col |', icon: <Table size={14}/> },
-            { id: 'todo', label: 'チェックリスト', desc: '- [ ] item', icon: <CheckSquare size={14}/> },
-          ]
+          suggestions: categories,
+          history: []
         });
         return;
       }
@@ -1000,8 +1023,8 @@ export default function App() {
       return;
     }
 
-    // Dynamic Word Completion (Experimental)
-    if (lastChar && /[a-zA-Z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(lastChar)) {
+    // Dynamic Word Completion
+    if (editorSettings.dynamicSuggestions && lastChar && /[a-zA-Z\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(lastChar)) {
       const currentWord = textBefore.split(/[\s\n\W]/).pop();
       if (currentWord && currentWord.length >= 2) {
         const words = Array.from(new Set(editorContent.split(/[\s\n\W]/))).filter(w => w.length > 2 && w !== currentWord && w.startsWith(currentWord));
@@ -1651,6 +1674,17 @@ export default function App() {
                     <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{tt('wordWrap')}</span>
                   </label>
                 </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '8px' }}>
+                  <label className="checkbox-container">
+                    <input 
+                      type="checkbox" 
+                      checked={!!tempSettings.dynamicSuggestions} 
+                      onChange={e => setTempSettings({...tempSettings, dynamicSuggestions: e.target.checked})}
+                    />
+                    <span className="checkmark"></span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{tt('dynamicSuggestions')}</span>
+                  </label>
+                </div>
               </div>
 
               <div className="settings-section" style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
@@ -1964,9 +1998,48 @@ export default function App() {
                         setCompletion(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + prev.suggestions.length) % prev.suggestions.length }));
                         return;
                       }
+                      if (e.key === 'ArrowRight') {
+                        const suggestion = filteredSuggestions[completion.selectedIndex];
+                        if (suggestion?.type === 'category') {
+                          e.preventDefault();
+                          setCompletion(prev => ({
+                            ...prev,
+                            history: [...prev.history, { suggestions: prev.suggestions, selectedIndex: prev.selectedIndex }],
+                            suggestions: suggestion.children,
+                            selectedIndex: 0,
+                            query: ''
+                          }));
+                        }
+                        return;
+                      }
+                      if (e.key === 'ArrowLeft') {
+                        if (completion.history.length > 0) {
+                          e.preventDefault();
+                          const last = completion.history[completion.history.length - 1];
+                          setCompletion(prev => ({
+                            ...prev,
+                            history: prev.history.slice(0, -1),
+                            suggestions: last.suggestions,
+                            selectedIndex: last.selectedIndex,
+                            query: ''
+                          }));
+                        }
+                        return;
+                      }
                       if (e.key === 'Enter' || e.key === 'Tab') {
                         e.preventDefault();
-                        applyCompletion(completion.suggestions[completion.selectedIndex]);
+                        const suggestion = filteredSuggestions[completion.selectedIndex];
+                        if (suggestion?.type === 'category') {
+                          setCompletion(prev => ({
+                            ...prev,
+                            history: [...prev.history, { suggestions: prev.suggestions, selectedIndex: prev.selectedIndex }],
+                            suggestions: suggestion.children,
+                            selectedIndex: 0,
+                            query: ''
+                          }));
+                        } else {
+                          applyCompletion(suggestion);
+                        }
                         return;
                       }
                       if (e.key === 'Escape') {
@@ -2001,8 +2074,9 @@ export default function App() {
                       const start = target.selectionStart;
                       const end = target.selectionEnd;
                       
+                      e.preventDefault();
                       if (start !== end) {
-                        e.preventDefault();
+                        // Wrap selection
                         const selectedText = editorContent.substring(start, end);
                         const newText = editorContent.substring(0, start) + e.key + selectedText + pairMap[e.key] + editorContent.substring(end);
                         setEditorContent(newText);
@@ -2011,6 +2085,16 @@ export default function App() {
                           if (textareaRef.current) {
                             textareaRef.current.selectionStart = start + 1;
                             textareaRef.current.selectionEnd = end + 1;
+                          }
+                        }, 0);
+                      } else {
+                        // Auto-close empty
+                        const newText = editorContent.substring(0, start) + e.key + pairMap[e.key] + editorContent.substring(end);
+                        setEditorContent(newText);
+                        setIsDirty(true);
+                        setTimeout(() => {
+                          if (textareaRef.current) {
+                            textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 1;
                           }
                         }, 0);
                       }
@@ -2295,19 +2379,50 @@ export default function App() {
           style={{ left: completion.x, top: completion.y }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="completion-header">
-            {completion.trigger === '/' ? 'コマンド' : 'ファイルリンク'}
+          <div className="completion-header" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {completion.history.length > 0 && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const last = completion.history[completion.history.length - 1];
+                  setCompletion(prev => ({
+                    ...prev,
+                    history: prev.history.slice(0, -1),
+                    suggestions: last.suggestions,
+                    selectedIndex: last.selectedIndex
+                  }));
+                }}
+                className="btn-icon" 
+                style={{ width: '20px', height: '20px', padding: 0, border: 'none', background: 'none' }}
+              >
+                <ChevronRight size={14} style={{ transform: 'rotate(180deg)' }} />
+              </button>
+            )}
+            {completion.trigger === '/' ? 'コマンド' : completion.trigger === '[[' ? 'ファイルリンク' : '候補'}
           </div>
           {filteredSuggestions.map((suggestion, index) => (
             <div 
               key={suggestion.id}
               className={`completion-item ${index === completion.selectedIndex ? 'selected' : ''}`}
-              onClick={() => applyCompletion(suggestion)}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (suggestion.type === 'category') {
+                  setCompletion(prev => ({
+                    ...prev,
+                    history: [...prev.history, { suggestions: prev.suggestions, selectedIndex: prev.selectedIndex }],
+                    suggestions: suggestion.children,
+                    selectedIndex: 0,
+                    query: ''
+                  }));
+                } else {
+                  applyCompletion(suggestion);
+                }
+              }}
               onMouseEnter={() => setCompletion(prev => ({ ...prev, selectedIndex: index }))}
             >
               <div className="completion-item-icon">{suggestion.icon}</div>
               <div className="completion-item-label">{suggestion.label}</div>
-              <div className="completion-item-desc">{suggestion.desc}</div>
+              {suggestion.type === 'category' ? <ChevronRight size={14} color="var(--text-muted)" /> : <div className="completion-item-desc">{suggestion.desc}</div>}
             </div>
           ))}
         </div>
